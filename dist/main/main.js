@@ -14,6 +14,8 @@ function registerIpc() {
     ipcMain.handle("task:update", (_event, id, patch) => service.updateTask(id, patch));
     ipcMain.handle("task:delete", (_event, id) => service.deleteTask(id));
     ipcMain.handle("list:create", (_event, draft) => service.createList(draft));
+    ipcMain.handle("list:update", (_event, listId, patch) => service.updateList(listId, patch));
+    ipcMain.handle("list:delete", (_event, listId) => service.deleteList(listId));
     ipcMain.handle("list:suggestions", (_event, listId, enabled) => service.setListSuggestions(listId, enabled));
     ipcMain.handle("step:add", (_event, taskId, draft) => service.addStep(taskId, draft));
     ipcMain.handle("step:update", (_event, id, patch) => service.updateStep(id, patch));

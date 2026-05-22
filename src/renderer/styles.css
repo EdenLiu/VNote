@@ -1,3 +1,8 @@
+/* ===================================================================
+   VNote Global Styles
+   Design language: Microsoft To Do — clean, light, blue-accented
+   =================================================================== */
+
 :root {
   color: #1f2937;
   background: #eef2f6;
@@ -29,17 +34,26 @@ button {
   border: 0;
   background: transparent;
   color: inherit;
+  cursor: pointer;
 }
 
 #root {
   min-height: 100vh;
 }
 
+/* ===================================================================
+   Layout
+   =================================================================== */
+
 .layout {
   display: grid;
   grid-template-columns: 280px 1fr;
   min-height: 100vh;
 }
+
+/* ===================================================================
+   Sidebar
+   =================================================================== */
 
 .sidebar {
   background: #f9fbfc;
@@ -48,12 +62,15 @@ button {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow-y: auto;
 }
 
+/* Brand */
 .brand {
   display: flex;
   gap: 12px;
   align-items: center;
+  padding-bottom: 8px;
 }
 
 .brand-mark {
@@ -65,6 +82,7 @@ button {
   display: grid;
   place-items: center;
   font-weight: 700;
+  font-size: 18px;
 }
 
 .brand-title {
@@ -77,16 +95,7 @@ button {
   font-size: 12px;
 }
 
-.primary-action,
-.secondary-button,
-.nav-item,
-.task-row,
-.step-row,
-.attachment-row,
-.icon-button {
-  border-radius: 8px;
-}
-
+/* Primary action (My Day button) */
 .primary-action {
   display: flex;
   align-items: center;
@@ -95,8 +104,15 @@ button {
   background: #2563eb;
   color: white;
   font-weight: 600;
+  border-radius: 8px;
+  width: 100%;
 }
 
+.primary-action:hover {
+  background: #1d4ed8;
+}
+
+/* Navigation */
 .nav-list,
 .sidebar-section {
   display: flex;
@@ -116,6 +132,7 @@ button {
   letter-spacing: 0;
   color: #64748b;
   text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
 .nav-item {
@@ -126,6 +143,11 @@ button {
   padding: 10px 12px;
   color: #334155;
   background: #eef4fb;
+  border-radius: 8px;
+}
+
+.nav-item:hover {
+  background: #e2eaf8;
 }
 
 .nav-item.active {
@@ -138,18 +160,36 @@ button {
   height: 10px;
   border-radius: 50%;
   margin-right: 8px;
+  flex-shrink: 0;
 }
 
-.inline-create,
-.quick-add {
+/* Inline edit (list rename) */
+.inline-edit-input {
+  flex: 1;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  outline: none;
+  background: white;
+  min-width: 0;
+}
+
+.inline-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 2px 8px;
+}
+
+.inline-create {
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: 8px;
 }
 
 .inline-create input,
-.inline-create select,
-.quick-add input {
+.inline-create select {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 10px 12px;
@@ -157,7 +197,6 @@ button {
 }
 
 .inline-create button,
-.quick-add button,
 .icon-button {
   width: 36px;
   height: 36px;
@@ -165,14 +204,40 @@ button {
   place-items: center;
   background: white;
   border: 1px solid #cbd5e1;
+  border-radius: 8px;
 }
+
+.icon-button:hover {
+  background: #f1f5f9;
+}
+
+.icon-button-small {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: white;
+}
+
+.icon-button-small:hover {
+  background: #f1f5f9;
+}
+
+/* ===================================================================
+   Main Pane
+   =================================================================== */
 
 .main-pane {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
+/* Toolbar */
 .toolbar {
   display: flex;
   align-items: center;
@@ -180,6 +245,7 @@ button {
   padding: 20px 24px 12px;
   background: white;
   border-bottom: 1px solid #dbe4ee;
+  flex-shrink: 0;
 }
 
 .toolbar-spacer {
@@ -196,9 +262,9 @@ button {
   font-size: 12px;
 }
 
-.quick-add {
-  min-width: 420px;
-}
+/* ===================================================================
+   Error Banner
+   =================================================================== */
 
 .error-banner {
   margin: 12px 24px 0;
@@ -207,7 +273,22 @@ button {
   color: #b91c1c;
   border: 1px solid #fecaca;
   border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
 }
+
+.error-banner button {
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+  color: #b91c1c;
+}
+
+/* ===================================================================
+   Content Grid
+   =================================================================== */
 
 .content-grid {
   display: grid;
@@ -216,21 +297,26 @@ button {
   padding: 16px 24px 24px;
   min-height: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .task-column,
 .detail-pane {
   min-width: 0;
-  overflow: auto;
+  overflow-y: auto;
 }
+
+/* ===================================================================
+   Task Column
+   =================================================================== */
 
 .task-column {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-bottom: 16px;
 }
 
+/* Task Row */
 .task-row {
   width: 100%;
   display: grid;
@@ -241,6 +327,11 @@ button {
   background: white;
   border: 1px solid #dbe4ee;
   text-align: left;
+  border-radius: 8px;
+}
+
+.task-row:hover {
+  background: #f8fafc;
 }
 
 .task-row.selected {
@@ -248,34 +339,7 @@ button {
   box-shadow: 0 0 0 1px #2563eb inset;
 }
 
-.task-composer {
-  display: grid;
-  grid-template-columns: 36px 1fr;
-  gap: 10px;
-  align-items: center;
-  padding: 14px;
-  background: #eff4ff;
-  border: 1px solid #c7d2fe;
-  border-radius: 8px;
-}
-
-.task-composer input {
-  width: 100%;
-  border: 0;
-  outline: none;
-  background: transparent;
-}
-
-.composer-icon {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: white;
-  border: 1px solid #cbd5e1;
-}
-
+/* Check ring (completion toggle) */
 .check-ring {
   width: 22px;
   height: 22px;
@@ -283,6 +347,8 @@ button {
   border: 1px solid #94a3b8;
   display: grid;
   place-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .check-ring.completed {
@@ -291,6 +357,7 @@ button {
   color: white;
 }
 
+/* Task content */
 .task-main {
   min-width: 0;
 }
@@ -317,13 +384,12 @@ button {
   color: #f59e0b;
 }
 
-.task-badges,
-.detail-grid,
-.detail-header,
-.meta-line {
+/* Task badges */
+.task-badges {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+  margin-top: 6px;
 }
 
 .badge {
@@ -337,21 +403,62 @@ button {
   font-size: 12px;
 }
 
+/* ===================================================================
+   Quick Add Bar
+   =================================================================== */
+
+.task-composer {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 14px;
+  background: #eff4ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.task-composer input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+}
+
+.composer-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid #cbd5e1;
+}
+
+/* ===================================================================
+   Detail Pane
+   =================================================================== */
+
 .detail-pane {
   background: white;
   border: 1px solid #dbe4ee;
   border-radius: 10px;
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
+/* Detail header (action buttons) */
 .detail-header {
-  margin-bottom: 12px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
-.icon-button.danger {
-  color: #b91c1c;
-}
-
+/* Detail title */
 .detail-title {
   width: 100%;
   border: 0;
@@ -362,10 +469,16 @@ button {
   outline: none;
 }
 
+.detail-title:focus {
+  border-bottom-color: #2563eb;
+}
+
+/* Detail grid (dropdowns / date inputs) */
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 16px;
+  margin-top: 14px;
+  gap: 12px;
 }
 
 .detail-grid label,
@@ -373,6 +486,8 @@ button {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  font-size: 13px;
+  color: #475569;
 }
 
 .detail-grid input,
@@ -388,9 +503,8 @@ button {
   margin-top: 14px;
 }
 
-.step-row,
-.attachment-row,
-.secondary-button {
+/* Steps */
+.step-row {
   width: 100%;
   display: flex;
   align-items: center;
@@ -399,23 +513,160 @@ button {
   background: #f8fafc;
   border: 1px solid #dbe4ee;
   text-align: left;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.step-row:hover {
+  background: #eef4fb;
+}
+
+/* Attachments */
+.attachment-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.attachment-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  flex: 1;
+  text-align: left;
 }
 
 .secondary-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  margin-top: 4px;
 }
+
+.secondary-button:hover {
+  background: #eef4fb;
+}
+
+/* ===================================================================
+   Meta Section
+   =================================================================== */
+
+.meta-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.meta-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+/* Tag chips */
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+}
+
+.tag-remove {
+  padding: 0;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: transparent;
+  opacity: 0.6;
+}
+
+.tag-remove:hover {
+  opacity: 1;
+  background: #cbd5e1;
+}
+
+.tag-add-wrap {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.tag-input {
+  width: 80px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 12px;
+  outline: none;
+}
+
+.tag-input:focus {
+  border-color: #2563eb;
+}
+
+/* ===================================================================
+   Utility
+   =================================================================== */
 
 .text-button {
   padding: 0;
   color: #2563eb;
   font-weight: 600;
+  font-size: 12px;
+}
+
+.text-button:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.text-button.danger,
+.icon-button-small.danger,
+.icon-button.danger {
+  color: #b91c1c;
+}
+
+.text-button.danger:hover,
+.icon-button-small.danger:hover,
+.icon-button.danger:hover {
+  color: #dc2626;
 }
 
 .muted {
   color: #64748b;
   margin-left: auto;
+  font-size: 12px;
 }
 
+/* Empty state */
 .empty-state {
   min-height: 100%;
   display: grid;
@@ -424,7 +675,12 @@ button {
   color: #64748b;
   gap: 10px;
   padding: 40px;
+  align-content: center;
 }
+
+/* ===================================================================
+   Responsive
+   =================================================================== */
 
 @media (max-width: 1200px) {
   .layout {
@@ -433,5 +689,9 @@ button {
 
   .content-grid {
     grid-template-columns: 1fr;
+  }
+
+  .detail-pane {
+    display: none;
   }
 }

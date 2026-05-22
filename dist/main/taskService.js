@@ -56,6 +56,36 @@ export class TaskService {
             throw new Error("List not found");
         return list;
     }
+    /** Update a list's name, color, and/or suggestion preference. */
+    updateList(listId, patch) {
+        const current = this.getLists().find((item) => item.id === listId);
+        if (!current)
+            throw new Error("List not found");
+        this.db.run("UPDATE lists SET name = ?, color = ?, include_in_suggestions = ? WHERE id = ?", [
+            patch.name ?? current.name,
+            patch.color ?? current.color,
+            patch.includeInSuggestions !== undefined ? (patch.includeInSuggestions ? 1 : 0) : (current.includeInSuggestions ? 1 : 0),
+            listId
+        ]);
+        const updated = this.getLists().find((item) => item.id === listId);
+        if (!updated)
+            throw new Error("List not found after update");
+        return updated;
+    }
+    /**
+     * Permanently delete a list. Tasks in the list are reassigned to the inbox
+     * (the first list) before the list is removed, so no tasks are orphaned.
+     */
+    deleteList(listId) {
+        const lists = this.getLists();
+        if (lists.length <= 1)
+            throw new Error("Cannot delete the last list");
+        const inbox = lists[0];
+        this.db.transaction(() => {
+            this.db.run("UPDATE tasks SET list_id = ? WHERE list_id = ?", [inbox.id, listId]);
+            this.db.run("DELETE FROM lists WHERE id = ?", [listId]);
+        });
+    }
     getCategories() {
         return this.db.select("SELECT * FROM categories ORDER BY name ASC").map((row) => ({
             id: String(row.id),
