@@ -1,4 +1,4 @@
-import { Notification } from "electron";
+import { Notification } from 'electron';
 export class ReminderScheduler {
     service;
     timer;
@@ -23,7 +23,7 @@ export class ReminderScheduler {
             const key = `${task.id}:${task.reminderAt}`;
             if (new Date(task.reminderAt).getTime() <= now && !this.shown.has(key)) {
                 this.shown.add(key);
-                new Notification({ title: "VNote reminder", body: task.title }).show();
+                new Notification({ title: 'VNote reminder', body: task.title }).show();
             }
         }
     }

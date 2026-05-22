@@ -1,4 +1,4 @@
-import initSqlJs from "sql.js";
+import initSqlJs from 'sql.js';
 
 type Row = Record<string, string | number | null>;
 
@@ -87,20 +87,20 @@ export async function createTestDb(): Promise<TestDb> {
 
   const now = new Date().toISOString();
   for (const list of [
-    ["inbox", "Tasks", "#2563eb"],
-    ["work", "Work", "#0f766e"],
-    ["personal", "Personal", "#7c3aed"],
+    ['inbox', 'Tasks', '#2563eb'],
+    ['work', 'Work', '#0f766e'],
+    ['personal', 'Personal', '#7c3aed'],
   ]) {
-    db.run("INSERT INTO lists VALUES (?, ?, ?, 1, ?)", [...list, now]);
+    db.run('INSERT INTO lists VALUES (?, ?, ?, 1, ?)', [...list, now]);
   }
 
   for (const category of [
-    ["red", "Red", "#dc2626"],
-    ["yellow", "Yellow", "#ca8a04"],
-    ["green", "Green", "#16a34a"],
-    ["blue", "Blue", "#2563eb"],
+    ['red', 'Red', '#dc2626'],
+    ['yellow', 'Yellow', '#ca8a04'],
+    ['green', 'Green', '#16a34a'],
+    ['blue', 'Blue', '#2563eb'],
   ]) {
-    db.run("INSERT INTO categories VALUES (?, ?, ?)", category);
+    db.run('INSERT INTO categories VALUES (?, ?, ?)', category);
   }
 
   return {
@@ -118,12 +118,12 @@ export async function createTestDb(): Promise<TestDb> {
       db.run(query, params);
     },
     transaction(work) {
-      db.run("BEGIN TRANSACTION");
+      db.run('BEGIN TRANSACTION');
       try {
         work();
-        db.run("COMMIT");
+        db.run('COMMIT');
       } catch (e) {
-        db.run("ROLLBACK");
+        db.run('ROLLBACK');
         throw e;
       }
     },

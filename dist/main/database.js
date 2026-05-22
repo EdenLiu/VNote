@@ -1,7 +1,7 @@
-import fs from "node:fs";
-import path from "node:path";
-import { app } from "electron";
-import initSqlJs from "sql.js";
+import fs from 'node:fs';
+import path from 'node:path';
+import { app } from 'electron';
+import initSqlJs from 'sql.js';
 let sqlRuntime;
 export class VNoteDatabase {
     db;
@@ -14,12 +14,12 @@ export class VNoteDatabase {
     static async open() {
         if (!sqlRuntime) {
             sqlRuntime = await initSqlJs({
-                locateFile: (file) => path.join(process.cwd(), "node_modules", "sql.js", "dist", file)
+                locateFile: (file) => path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', file),
             });
         }
-        const dataDir = app.getPath("userData");
+        const dataDir = app.getPath('userData');
         fs.mkdirSync(dataDir, { recursive: true });
-        const dbPath = path.join(dataDir, "vnote.sqlite");
+        const dbPath = path.join(dataDir, 'vnote.sqlite');
         const db = fs.existsSync(dbPath)
             ? new sqlRuntime.Database(fs.readFileSync(dbPath))
             : new sqlRuntime.Database();
@@ -46,14 +46,14 @@ export class VNoteDatabase {
         return rows;
     }
     transaction(work) {
-        this.db.run("BEGIN TRANSACTION");
+        this.db.run('BEGIN TRANSACTION');
         try {
             work();
-            this.db.run("COMMIT");
+            this.db.run('COMMIT');
             this.scheduleSave();
         }
         catch (error) {
-            this.db.run("ROLLBACK");
+            this.db.run('ROLLBACK');
             throw error;
         }
     }
@@ -133,23 +133,23 @@ export class VNoteDatabase {
     }
     seedDefaults() {
         const now = new Date().toISOString();
-        if (Number(this.select("SELECT COUNT(*) count FROM lists")[0]?.count ?? 0) === 0) {
+        if (Number(this.select('SELECT COUNT(*) count FROM lists')[0]?.count ?? 0) === 0) {
             for (const list of [
-                ["inbox", "Tasks", "#2563eb"],
-                ["work", "Work", "#0f766e"],
-                ["personal", "Personal", "#7c3aed"]
+                ['inbox', 'Tasks', '#2563eb'],
+                ['work', 'Work', '#0f766e'],
+                ['personal', 'Personal', '#7c3aed'],
             ]) {
-                this.run("INSERT INTO lists VALUES (?, ?, ?, 1, ?)", [...list, now]);
+                this.run('INSERT INTO lists VALUES (?, ?, ?, 1, ?)', [...list, now]);
             }
         }
-        if (Number(this.select("SELECT COUNT(*) count FROM categories")[0]?.count ?? 0) === 0) {
+        if (Number(this.select('SELECT COUNT(*) count FROM categories')[0]?.count ?? 0) === 0) {
             for (const category of [
-                ["red", "Red", "#dc2626"],
-                ["yellow", "Yellow", "#ca8a04"],
-                ["green", "Green", "#16a34a"],
-                ["blue", "Blue", "#2563eb"]
+                ['red', 'Red', '#dc2626'],
+                ['yellow', 'Yellow', '#ca8a04'],
+                ['green', 'Green', '#16a34a'],
+                ['blue', 'Blue', '#2563eb'],
             ]) {
-                this.run("INSERT INTO categories VALUES (?, ?, ?)", category);
+                this.run('INSERT INTO categories VALUES (?, ?, ?)', category);
             }
         }
     }
