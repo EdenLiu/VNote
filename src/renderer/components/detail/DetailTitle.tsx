@@ -13,7 +13,7 @@ export function DetailTitle({ value, onChange, onSave }: Props) {
       onChange={(e) => onChange(e.target.value)}
       onBlur={onSave}
       onKeyDown={(e) => {
-        if (e.key === "Enter") onSave();
+        if (e.key === 'Enter') onSave();
       }}
       placeholder="Task title"
     />

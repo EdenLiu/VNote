@@ -5,36 +5,36 @@
 export const ELECTRON_CHANNELS = {
   state: {
     /** Fetch full application state. */
-    get: "state:get"
+    get: 'state:get',
   },
   tasks: {
-    create: "task:create",
-    update: "task:update",
-    delete: "task:delete"
+    create: 'task:create',
+    update: 'task:update',
+    delete: 'task:delete',
   },
   lists: {
-    create: "list:create",
-    update: "list:update",
-    delete: "list:delete",
+    create: 'list:create',
+    update: 'list:update',
+    delete: 'list:delete',
     /** Toggle includeInSuggestions for a list. */
-    toggleSuggestions: "list:suggestions"
+    toggleSuggestions: 'list:suggestions',
   },
   steps: {
-    add: "step:add",
-    update: "step:update",
-    delete: "step:delete"
+    add: 'step:add',
+    update: 'step:update',
+    delete: 'step:delete',
   },
   attachments: {
-    add: "attachment:add",
-    open: "attachment:open",
-    remove: "attachment:remove"
+    add: 'attachment:add',
+    open: 'attachment:open',
+    remove: 'attachment:remove',
   },
   suggestions: {
     /** Re-run the suggestion scoring algorithm. */
-    refresh: "suggestions:refresh"
+    refresh: 'suggestions:refresh',
   },
   myDay: {
     /** Add a task to today's My Day view. */
-    add: "myday:add"
-  }
+    add: 'myday:add',
+  },
 } as const;

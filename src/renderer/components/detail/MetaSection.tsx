@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Tag, X, Plus } from "lucide-react";
-import type { Task, TaskList, Category } from "@shared/types";
+import { useState } from 'react';
+import { Tag, X, Plus } from 'lucide-react';
+import type { Task, TaskList, Category } from '@shared/types';
 
 interface Props {
   task: Task;
@@ -14,16 +14,24 @@ interface Props {
 }
 
 /** Read/write meta section showing list, tags, category, and My Day status. */
-export function MetaSection({ task, list, categories, inMyDay, onAddToMyDay, onRemoveFromMyDay, onTagsChange }: Props) {
-  const [newTag, setNewTag] = useState("");
+export function MetaSection({
+  task,
+  list,
+  categories,
+  inMyDay,
+  onAddToMyDay,
+  onRemoveFromMyDay,
+  onTagsChange,
+}: Props) {
+  const [newTag, setNewTag] = useState('');
   const category = categories.find((c) => c.id === task.categoryId);
 
   const addTag = () => {
-    const tag = newTag.trim().toLowerCase().replace(/^#/, "");
+    const tag = newTag.trim().toLowerCase().replace(/^#/, '');
     if (!tag) return;
     const updated = Array.from(new Set([...task.tags, tag]));
     onTagsChange(updated);
-    setNewTag("");
+    setNewTag('');
   };
 
   const removeTag = (tag: string) => {
@@ -36,24 +44,29 @@ export function MetaSection({ task, list, categories, inMyDay, onAddToMyDay, onR
 
       <div className="meta-line">
         <span>List</span>
-        <span>{list?.name ?? "-"}</span>
+        <span>{list?.name ?? '-'}</span>
       </div>
 
       <div className="meta-line">
         <span>Category</span>
         <span>
           {category ? (
-            <span className="badge" style={{ background: category.color + "20", color: category.color }}>
+            <span
+              className="badge"
+              style={{ background: category.color + '20', color: category.color }}
+            >
               {category.name}
             </span>
-          ) : "-"}
+          ) : (
+            '-'
+          )}
         </span>
       </div>
 
       <div className="meta-line">
         <span>My Day</span>
         <button className="text-button" onClick={inMyDay ? onRemoveFromMyDay : onAddToMyDay}>
-          {inMyDay ? "Remove" : "Add"}
+          {inMyDay ? 'Remove' : 'Add'}
         </button>
       </div>
 
@@ -64,7 +77,11 @@ export function MetaSection({ task, list, categories, inMyDay, onAddToMyDay, onR
             <span key={tag} className="badge tag-chip">
               <Tag size={12} />
               {tag}
-              <button className="tag-remove" onClick={() => removeTag(tag)} title={`Remove #${tag}`}>
+              <button
+                className="tag-remove"
+                onClick={() => removeTag(tag)}
+                title={`Remove #${tag}`}
+              >
                 <X size={10} />
               </button>
             </span>
@@ -76,7 +93,7 @@ export function MetaSection({ task, list, categories, inMyDay, onAddToMyDay, onR
               onChange={(e) => setNewTag(e.target.value)}
               placeholder="Add tag"
               onKeyDown={(e) => {
-                if (e.key === "Enter") addTag();
+                if (e.key === 'Enter') addTag();
               }}
             />
             <button className="icon-button-small" onClick={addTag} title="Add tag">

@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.claude/
+*.sqlite
+*.log
+package-lock.json

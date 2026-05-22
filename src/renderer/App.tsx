@@ -1,37 +1,36 @@
-import { useEffect, useMemo, useState } from "react";
-import { ListTodo } from "lucide-react";
-import type { Task, TaskPatch, ViewId } from "@shared/types";
-import { useVNote } from "./hooks/useVNote";
-import { Sidebar } from "./components/sidebar/Sidebar";
-import { BrandHeader } from "./components/sidebar/BrandHeader";
-import { SmartViewsNav } from "./components/sidebar/SmartViewsNav";
-import { ListsSection } from "./components/sidebar/ListsSection";
-import { TaskList } from "./components/tasklist/TaskList";
-import { DetailPane } from "./components/detail/DetailPane";
-import { DetailHeader } from "./components/detail/DetailHeader";
-import { DetailTitle } from "./components/detail/DetailTitle";
-import { DetailFields } from "./components/detail/DetailFields";
-import { NotesSection } from "./components/detail/NotesSection";
-import { StepsSection } from "./components/detail/StepsSection";
-import { AttachmentsSection } from "./components/detail/AttachmentsSection";
-import { MetaSection } from "./components/detail/MetaSection";
-import { EmptyState } from "./components/common/EmptyState";
-import { ErrorBanner } from "./components/common/ErrorBanner";
+import { useEffect, useMemo, useState } from 'react';
+import { ListTodo } from 'lucide-react';
+import type { Task, TaskPatch, ViewId } from '@shared/types';
+import { useVNote } from './hooks/useVNote';
+import { Sidebar } from './components/sidebar/Sidebar';
+import { BrandHeader } from './components/sidebar/BrandHeader';
+import { SmartViewsNav } from './components/sidebar/SmartViewsNav';
+import { ListsSection } from './components/sidebar/ListsSection';
+import { TaskList } from './components/tasklist/TaskList';
+import { DetailPane } from './components/detail/DetailPane';
+import { DetailHeader } from './components/detail/DetailHeader';
+import { DetailTitle } from './components/detail/DetailTitle';
+import { DetailFields } from './components/detail/DetailFields';
+import { NotesSection } from './components/detail/NotesSection';
+import { StepsSection } from './components/detail/StepsSection';
+import { AttachmentsSection } from './components/detail/AttachmentsSection';
+import { MetaSection } from './components/detail/MetaSection';
+import { EmptyState } from './components/common/EmptyState';
+import { ErrorBanner } from './components/common/ErrorBanner';
 
 const VIEW_LABELS: Record<string, string> = {
-  "my-day": "My Day",
-  suggestions: "Suggestions",
-  planned: "Planned",
-  important: "Important",
-  "flagged-email": "Flagged email",
-  completed: "Completed"
+  'my-day': 'My Day',
+  suggestions: 'Suggestions',
+  planned: 'Planned',
+  important: 'Important',
+  'flagged-email': 'Flagged email',
+  completed: 'Completed',
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
 export function App() {
   const {
-    state,
     lists,
     categories,
     tasks,
@@ -48,41 +47,41 @@ export function App() {
     updateStep,
     toggleSuggestions,
     addToMyDay,
-    addAttachment
+    addAttachment,
   } = useVNote();
 
-  const [activeView, setActiveView] = useState<ViewId>("list:inbox");
+  const [activeView, setActiveView] = useState<ViewId>('list:inbox');
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>();
   const [detailDraft, setDetailDraft] = useState<Partial<Task>>({});
 
   // Derive the selected task
   const selectedTask = useMemo(
     () => tasks.find((t) => t.id === selectedTaskId),
-    [tasks, selectedTaskId]
+    [tasks, selectedTaskId],
   );
 
   // Sync detail draft when selection changes
   useEffect(() => {
-    setDetailDraft(selectedTask ?? {});
+    setDetailDraft(selectedTask ?? {}); // eslint-disable-line react-hooks/set-state-in-effect -- resetting editing state on selection change
   }, [selectedTask]);
 
   // Compute visible tasks based on active view
   const visibleTasks = useMemo(() => {
     const todayKey = today();
     switch (activeView) {
-      case "suggestions":
+      case 'suggestions':
         return suggestions;
-      case "planned":
+      case 'planned':
         return tasks.filter((t) => Boolean(t.dueDate));
-      case "important":
+      case 'important':
         return tasks.filter((t) => t.important && !t.completed);
-      case "completed":
+      case 'completed':
         return tasks.filter((t) => t.completed);
-      case "my-day":
+      case 'my-day':
         return tasks.filter((t) => t.myDayDate === todayKey);
       default:
-        if (activeView.startsWith("list:")) {
-          const listId = activeView.slice("list:".length);
+        if (activeView.startsWith('list:')) {
+          const listId = activeView.slice('list:'.length);
           return tasks.filter((t) => t.listId === listId);
         }
         return tasks;
@@ -91,8 +90,8 @@ export function App() {
 
   // Get the target list ID for quick-add
   const quickAddListId = useMemo(() => {
-    if (activeView.startsWith("list:")) return activeView.slice("list:".length);
-    return lists[0]?.id ?? "inbox";
+    if (activeView.startsWith('list:')) return activeView.slice('list:'.length);
+    return lists[0]?.id ?? 'inbox';
   }, [activeView, lists]);
 
   // Handlers
@@ -106,8 +105,7 @@ export function App() {
 
   const handleSelectTask = (task: Task) => setSelectedTaskId(task.id);
 
-  const handleToggleComplete = (id: string, completed: boolean) =>
-    updateTask(id, { completed });
+  const handleToggleComplete = (id: string, completed: boolean) => updateTask(id, { completed });
 
   const todayKey = today();
 
@@ -134,7 +132,9 @@ export function App() {
         <header className="toolbar">
           <div>
             <div className="view-title">
-              {VIEW_LABELS[activeView] ?? lists.find((l) => `list:${l.id}` === activeView)?.name ?? "List"}
+              {VIEW_LABELS[activeView] ??
+                lists.find((l) => `list:${l.id}` === activeView)?.name ??
+                'List'}
             </div>
             <div className="view-meta">{visibleTasks.length} tasks</div>
           </div>
@@ -173,7 +173,7 @@ export function App() {
                   }
                   onToggleRepeat={() =>
                     handleUpdateTask(selectedTask.id, {
-                      repeat: selectedTask.repeat === "none" ? "daily" : "none"
+                      repeat: selectedTask.repeat === 'none' ? 'daily' : 'none',
                     })
                   }
                   onDelete={() => {
@@ -238,7 +238,8 @@ export function App() {
               </>
             ) : (
               <EmptyState icon={<ListTodo size={30} />}>
-                Select a task to edit its steps, notes, attachments, due date, reminder and repeat settings.
+                Select a task to edit its steps, notes, attachments, due date, reminder and repeat
+                settings.
               </EmptyState>
             )}
           </DetailPane>

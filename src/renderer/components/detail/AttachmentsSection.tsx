@@ -1,5 +1,5 @@
-import { FileText, Paperclip, Trash2 } from "lucide-react";
-import type { Attachment } from "@shared/types";
+import { FileText, Paperclip, Trash2 } from 'lucide-react';
+import type { Attachment } from '@shared/types';
 
 interface Props {
   attachments: Attachment[];

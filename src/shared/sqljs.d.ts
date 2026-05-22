@@ -1,4 +1,4 @@
-declare module "sql.js" {
+declare module 'sql.js' {
   export interface Statement {
     step(): boolean;
     getAsObject(): Record<string, string | number | null>;
@@ -15,5 +15,7 @@ declare module "sql.js" {
     Database: new (data?: Buffer | Uint8Array) => Database;
   }
 
-  export default function initSqlJs(options?: { locateFile?: (file: string) => string }): Promise<SqlJsStatic>;
+  export default function initSqlJs(options?: {
+    locateFile?: (file: string) => string;
+  }): Promise<SqlJsStatic>;
 }
