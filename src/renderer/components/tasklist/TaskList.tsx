@@ -1,6 +1,6 @@
-import type { Task } from "@shared/types";
-import { TaskRow } from "./TaskRow";
-import { QuickAddBar } from "./QuickAddBar";
+import type { Task } from '@shared/types';
+import { TaskRow } from './TaskRow';
+import { QuickAddBar } from './QuickAddBar';
 
 interface Props {
   tasks: Task[];
@@ -12,7 +12,14 @@ interface Props {
 }
 
 /** The main task column: scrollable task rows + quick-add bar at the bottom. */
-export function TaskList({ tasks, selectedTaskId, quickAddListId, onSelectTask, onToggleComplete, onCreateTask }: Props) {
+export function TaskList({
+  tasks,
+  selectedTaskId,
+  quickAddListId,
+  onSelectTask,
+  onToggleComplete,
+  onCreateTask,
+}: Props) {
   return (
     <div className="task-column">
       {tasks.map((task) => (

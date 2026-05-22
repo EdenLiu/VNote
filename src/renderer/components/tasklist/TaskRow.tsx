@@ -1,5 +1,5 @@
-import { Circle, Check, Star, CalendarDays, Tag, Paperclip } from "lucide-react";
-import type { Task } from "@shared/types";
+import { Circle, Check, Star, CalendarDays, Tag, Paperclip } from 'lucide-react';
+import type { Task } from '@shared/types';
 
 interface Props {
   task: Task;
@@ -12,11 +12,11 @@ interface Props {
 export function TaskRow({ task, isSelected, onSelect, onToggleComplete }: Props) {
   return (
     <button
-      className={isSelected ? "task-row selected" : "task-row"}
+      className={isSelected ? 'task-row selected' : 'task-row'}
       onClick={() => onSelect(task)}
     >
       <span
-        className={task.completed ? "check-ring completed" : "check-ring"}
+        className={task.completed ? 'check-ring completed' : 'check-ring'}
         onClick={async (e) => {
           e.stopPropagation();
           onToggleComplete(task.id, !task.completed);
@@ -30,9 +30,7 @@ export function TaskRow({ task, isSelected, onSelect, onToggleComplete }: Props)
 
       <div className="task-main">
         <div className="task-title-line">
-          <span className={task.completed ? "task-title done" : "task-title"}>
-            {task.title}
-          </span>
+          <span className={task.completed ? 'task-title done' : 'task-title'}>{task.title}</span>
           {task.important ? <Star size={14} className="accent" /> : null}
         </div>
 

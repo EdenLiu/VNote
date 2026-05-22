@@ -11,7 +11,11 @@
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.main.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
+    "lint": "eslint src/",
+    "quality": "npm run format:check && npm run lint && npm run typecheck"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.1",
@@ -22,12 +26,18 @@
     "sql.js": "^1.13.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
+    "eslint": "^10.4.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "prettier": "^3.8.3",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.4",
     "vite": "^7.2.4",
     "vitest": "^4.0.14",
     "wait-on": "^9.0.3"

@@ -1,29 +1,40 @@
-import { useState } from "react";
-import { Plus, Trash2, Check, X, Pencil } from "lucide-react";
-import type { TaskList, ViewId } from "@shared/types";
+import { useState } from 'react';
+import { Plus, Trash2, Check, X, Pencil } from 'lucide-react';
+import type { TaskList, ViewId } from '@shared/types';
 
-const DEFAULT_COLORS = ["#2563eb", "#0f766e", "#7c3aed", "#dc2626", "#ca8a04", "#16a34a"];
+const DEFAULT_COLORS = ['#2563eb', '#0f766e', '#7c3aed', '#dc2626', '#ca8a04', '#16a34a'];
 
 interface Props {
   lists: TaskList[];
   activeView: ViewId;
   onViewChange: (view: ViewId) => void;
   onCreateList: (name: string, color: string) => Promise<unknown>;
-  onUpdateList: (id: string, patch: { name?: string; color?: string; includeInSuggestions?: boolean }) => Promise<unknown>;
+  onUpdateList: (
+    id: string,
+    patch: { name?: string; color?: string; includeInSuggestions?: boolean },
+  ) => Promise<unknown>;
   onDeleteList: (id: string) => Promise<unknown>;
   onToggleSuggestions: (listId: string, enabled: boolean) => Promise<unknown>;
 }
 
-export function ListsSection({ lists, activeView, onViewChange, onCreateList, onUpdateList, onDeleteList, onToggleSuggestions }: Props) {
-  const [name, setName] = useState("");
+export function ListsSection({
+  lists,
+  activeView,
+  onViewChange,
+  onCreateList,
+  onUpdateList,
+  onDeleteList,
+  onToggleSuggestions,
+}: Props) {
+  const [name, setName] = useState('');
   const [color, setColor] = useState(DEFAULT_COLORS[0]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editName, setEditName] = useState('');
 
   const handleCreate = async () => {
     if (!name.trim()) return;
     await onCreateList(name.trim(), color);
-    setName("");
+    setName('');
     setColor(DEFAULT_COLORS[0]);
   };
 
@@ -37,12 +48,12 @@ export function ListsSection({ lists, activeView, onViewChange, onCreateList, on
       await onUpdateList(id, { name: editName.trim() });
     }
     setEditingId(null);
-    setEditName("");
+    setEditName('');
   };
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditName("");
+    setEditName('');
   };
 
   return (
@@ -52,7 +63,7 @@ export function ListsSection({ lists, activeView, onViewChange, onCreateList, on
       {lists.map((list) => (
         <div key={list.id} className="list-item-wrap">
           <button
-            className={activeView === `list:${list.id}` ? "nav-item active" : "nav-item"}
+            className={activeView === `list:${list.id}` ? 'nav-item active' : 'nav-item'}
             onClick={() => onViewChange(`list:${list.id}`)}
           >
             {editingId === list.id ? (
@@ -61,8 +72,8 @@ export function ListsSection({ lists, activeView, onViewChange, onCreateList, on
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") void commitEdit(list.id);
-                  if (e.key === "Escape") cancelEdit();
+                  if (e.key === 'Enter') void commitEdit(list.id);
+                  if (e.key === 'Escape') cancelEdit();
                 }}
                 onBlur={() => commitEdit(list.id)}
                 autoFocus
@@ -78,7 +89,11 @@ export function ListsSection({ lists, activeView, onViewChange, onCreateList, on
 
           {editingId === list.id ? (
             <div className="inline-actions">
-              <button className="icon-button-small" onClick={() => commitEdit(list.id)} title="Save">
+              <button
+                className="icon-button-small"
+                onClick={() => commitEdit(list.id)}
+                title="Save"
+              >
                 <Check size={14} />
               </button>
               <button className="icon-button-small" onClick={cancelEdit} title="Cancel">
@@ -96,7 +111,7 @@ export function ListsSection({ lists, activeView, onViewChange, onCreateList, on
                   await onToggleSuggestions(list.id, !list.includeInSuggestions);
                 }}
               >
-                {list.includeInSuggestions ? "On" : "Off"}
+                {list.includeInSuggestions ? 'On' : 'Off'}
               </button>
               <button
                 className="text-button danger"
@@ -120,12 +135,14 @@ export function ListsSection({ lists, activeView, onViewChange, onCreateList, on
           onChange={(e) => setName(e.target.value)}
           placeholder="New list"
           onKeyDown={(e) => {
-            if (e.key === "Enter") void handleCreate();
+            if (e.key === 'Enter') void handleCreate();
           }}
         />
         <select value={color} onChange={(e) => setColor(e.target.value)}>
           {DEFAULT_COLORS.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
         <button onClick={handleCreate} aria-label="Create list">

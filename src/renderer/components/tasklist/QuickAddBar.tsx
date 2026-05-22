@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useState } from 'react';
+import { Plus } from 'lucide-react';
 
 interface Props {
   /** The target list ID for new tasks. */
@@ -9,12 +9,12 @@ interface Props {
 
 /** Bottom input bar for quickly adding a new task. */
 export function QuickAddBar({ listId: _listId, onCreate }: Props) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState('');
 
   const handleCreate = async () => {
     if (!value.trim()) return;
     await onCreate(value.trim());
-    setValue("");
+    setValue('');
   };
 
   return (
@@ -27,7 +27,7 @@ export function QuickAddBar({ listId: _listId, onCreate }: Props) {
         onChange={(e) => setValue(e.target.value)}
         placeholder="Add a task"
         onKeyDown={(e) => {
-          if (e.key === "Enter") void handleCreate();
+          if (e.key === 'Enter') void handleCreate();
         }}
       />
     </div>

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AppState, Task, TaskDraft, TaskPatch } from "@shared/types";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { AppState, Task, TaskDraft, TaskPatch } from '@shared/types';
 
 /**
  * Central state hook for VNote. Manages the full AppState, provides memoized
@@ -22,15 +22,15 @@ export function useVNote() {
     setSuggestedTasks(tasks);
   }, []);
 
-  // Initial load
+  // Initial load — effect is the correct pattern for IPC data fetching
   useEffect(() => {
-    void load();
+    void load(); // eslint-disable-line react-hooks/set-state-in-effect
   }, [load]);
 
   // Keep suggestions in sync
   const taskCount = state?.tasks.length ?? 0;
   useEffect(() => {
-    void refreshSuggestions().catch(() => undefined);
+    void refreshSuggestions().catch(() => undefined); // eslint-disable-line react-hooks/set-state-in-effect -- syncing suggestions from IPC
   }, [taskCount, refreshSuggestions]);
 
   /** Wrap an async API call with error handling and auto-reload on success. */
@@ -47,80 +47,76 @@ export function useVNote() {
         return undefined;
       }
     },
-    [load, refreshSuggestions]
+    [load, refreshSuggestions],
   );
 
   const createTask = useCallback(
     (draft: TaskDraft) => withError(() => window.vnote.createTask(draft)),
-    [withError]
+    [withError],
   );
 
   const updateTask = useCallback(
     (id: string, patch: TaskPatch) => withError(() => window.vnote.updateTask(id, patch)),
-    [withError]
+    [withError],
   );
 
   const deleteTask = useCallback(
     (id: string) => withError(() => window.vnote.deleteTask(id)),
-    [withError]
+    [withError],
   );
 
   const createList = useCallback(
-    (name: string, color: string) =>
-      withError(() => window.vnote.createList({ name, color })),
-    [withError]
+    (name: string, color: string) => withError(() => window.vnote.createList({ name, color })),
+    [withError],
   );
 
   const updateList = useCallback(
     (id: string, patch: { name?: string; color?: string; includeInSuggestions?: boolean }) =>
       withError(() => window.vnote.updateList(id, patch)),
-    [withError]
+    [withError],
   );
 
   const deleteList = useCallback(
     (id: string) => withError(() => window.vnote.deleteList(id)),
-    [withError]
+    [withError],
   );
 
   const addStep = useCallback(
     (taskId: string, title: string) => withError(() => window.vnote.addStep(taskId, { title })),
-    [withError]
+    [withError],
   );
 
   const updateStep = useCallback(
     (id: string, patch: { title?: string; completed?: boolean; sortOrder?: number }) =>
       withError(() => window.vnote.updateStep(id, patch)),
-    [withError]
+    [withError],
   );
 
   const deleteStep = useCallback(
     (id: string) => withError(() => window.vnote.deleteStep(id)),
-    [withError]
+    [withError],
   );
 
   const toggleSuggestions = useCallback(
     (listId: string, enabled: boolean) =>
       withError(() => window.vnote.setListSuggestions(listId, enabled)),
-    [withError]
+    [withError],
   );
 
   const addToMyDay = useCallback(
     (taskId: string, day?: string) => withError(() => window.vnote.addToMyDay(taskId, day)),
-    [withError]
+    [withError],
   );
 
   const addAttachment = useCallback(
     (taskId: string) => withError(() => window.vnote.addAttachment(taskId)),
-    [withError]
+    [withError],
   );
 
   const lists = state?.lists ?? [];
   const categories = state?.categories ?? [];
   const tasks = state?.tasks ?? [];
-  const suggestions = useMemo(
-    () => suggestedTasks.filter((t) => !t.completed),
-    [suggestedTasks]
-  );
+  const suggestions = useMemo(() => suggestedTasks.filter((t) => !t.completed), [suggestedTasks]);
 
   return {
     state,
@@ -142,6 +138,6 @@ export function useVNote() {
     deleteStep,
     toggleSuggestions,
     addToMyDay,
-    addAttachment
+    addAttachment,
   };
 }

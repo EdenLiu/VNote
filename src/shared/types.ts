@@ -1,11 +1,17 @@
 /** Priority level for a task — "important" is the starred/flagged state. */
-export type TaskPriority = "normal" | "important";
+export type TaskPriority = 'normal' | 'important';
 
 /** Recurrence cadence for repeating tasks. */
-export type RepeatFrequency = "none" | "daily" | "weekly" | "monthly";
+export type RepeatFrequency = 'none' | 'daily' | 'weekly' | 'monthly';
 
 /** Built-in system views that are always present. */
-export type SmartViewId = "my-day" | "suggestions" | "planned" | "important" | "flagged-email" | "completed";
+export type SmartViewId =
+  | 'my-day'
+  | 'suggestions'
+  | 'planned'
+  | 'important'
+  | 'flagged-email'
+  | 'completed';
 
 /** Union of system views and user-created lists (prefixed with "list:"). */
 export type ViewId = SmartViewId | `list:${string}`;
@@ -91,7 +97,7 @@ export interface Task {
   /** Timestamp when the task was marked completed. */
   completedAt?: string;
   /** Origin — "manual" for user-created tasks, "email" for flagged emails. */
-  source: "manual" | "email";
+  source: 'manual' | 'email';
   /** Lowercase hashtags extracted from the title (e.g. "#urgent" → "urgent"). */
   tags: string[];
   steps: Step[];
@@ -166,7 +172,10 @@ export interface VNoteApi {
   /** Add a sub-task to an existing task. */
   addStep(taskId: string, draft: StepDraft): Promise<Step>;
   /** Update a step's title, completion, or sort order. */
-  updateStep(id: string, patch: Partial<Pick<Step, "title" | "completed" | "sortOrder">>): Promise<Step>;
+  updateStep(
+    id: string,
+    patch: Partial<Pick<Step, 'title' | 'completed' | 'sortOrder'>>,
+  ): Promise<Step>;
   /** Remove a step from its parent task. */
   deleteStep(id: string): Promise<void>;
   /** Open a native file picker, copy the file, and attach it to the task. */

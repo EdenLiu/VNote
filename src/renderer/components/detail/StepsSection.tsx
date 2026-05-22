@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Plus, Circle, Check } from "lucide-react";
-import type { Step } from "@shared/types";
+import { useState } from 'react';
+import { Plus, Circle, Check } from 'lucide-react';
+import type { Step } from '@shared/types';
 
 interface Props {
   steps: Step[];
@@ -10,13 +10,13 @@ interface Props {
 }
 
 /** Sub-task checklist for a task. */
-export function StepsSection({ steps, onAdd, onToggle, onDelete }: Props) {
-  const [value, setValue] = useState("");
+export function StepsSection({ steps, onAdd, onToggle, onDelete: _onDelete }: Props) {
+  const [value, setValue] = useState('');
 
   const handleAdd = async () => {
     if (!value.trim()) return;
     await onAdd(value.trim());
-    setValue("");
+    setValue('');
   };
 
   return (
@@ -30,7 +30,11 @@ export function StepsSection({ steps, onAdd, onToggle, onDelete }: Props) {
           onClick={() => onToggle(step.id, !step.completed)}
         >
           {step.completed ? <Check size={14} /> : <Circle size={14} />}
-          <span style={step.completed ? { textDecoration: "line-through", color: "#64748b" } : undefined}>
+          <span
+            style={
+              step.completed ? { textDecoration: 'line-through', color: '#64748b' } : undefined
+            }
+          >
             {step.title}
           </span>
         </button>
@@ -42,7 +46,7 @@ export function StepsSection({ steps, onAdd, onToggle, onDelete }: Props) {
           onChange={(e) => setValue(e.target.value)}
           placeholder="Add a step"
           onKeyDown={(e) => {
-            if (e.key === "Enter") void handleAdd();
+            if (e.key === 'Enter') void handleAdd();
           }}
         />
         <button onClick={handleAdd} aria-label="Add step">
