@@ -37,7 +37,9 @@ async function createWindow() {
         webPreferences: {
             preload: path.join(__dirname, "../preload/preload.js"),
             contextIsolation: true,
-            nodeIntegration: false
+            nodeIntegration: false,
+            // Required for the ESM preload emitted by the NodeNext TypeScript build.
+            sandbox: false
         }
     });
     const devServer = process.env.VITE_DEV_SERVER_URL;
