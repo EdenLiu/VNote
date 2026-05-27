@@ -46,8 +46,7 @@ button {
    =================================================================== */
 
 .layout {
-  display: grid;
-  grid-template-columns: 280px 1fr;
+  display: flex;
   min-height: 100vh;
 }
 
@@ -58,11 +57,37 @@ button {
 .sidebar {
   background: #f9fbfc;
   border-right: 1px solid #dbe4ee;
+  display: flex;
+  flex-direction: row;
+  overflow-y: auto;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.sidebar-inner {
   padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-resize-handle {
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle:active {
+  background: #2563eb;
+  opacity: 0.4;
 }
 
 /* Brand */
@@ -232,6 +257,7 @@ button {
 .main-pane {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-width: 0;
   height: 100vh;
   overflow: hidden;
@@ -683,10 +709,6 @@ button {
    =================================================================== */
 
 @media (max-width: 1200px) {
-  .layout {
-    grid-template-columns: 240px 1fr;
-  }
-
   .content-grid {
     grid-template-columns: 1fr;
   }
