@@ -76,7 +76,9 @@ export function App() {
       case 'important':
         return tasks.filter((t) => t.important && !t.completed);
       case 'completed':
-        return tasks.filter((t) => t.completed);
+        return tasks
+          .filter((t) => t.completed)
+          .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''));
       case 'my-day':
         return tasks.filter((t) => t.myDayDate === todayKey);
       default:
@@ -148,6 +150,8 @@ export function App() {
             tasks={visibleTasks}
             selectedTaskId={selectedTaskId}
             quickAddListId={quickAddListId}
+            lists={lists}
+            activeView={activeView}
             onSelectTask={handleSelectTask}
             onToggleComplete={handleToggleComplete}
             onCreateTask={handleCreateTask}

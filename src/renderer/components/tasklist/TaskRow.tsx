@@ -1,4 +1,4 @@
-import { Circle, Check, Star, CalendarDays, Tag, Paperclip } from 'lucide-react';
+import { Circle, Check, Star, CalendarDays, Tag, Paperclip, Clock } from 'lucide-react';
 import type { Task } from '@shared/types';
 
 interface Props {
@@ -6,6 +6,13 @@ interface Props {
   isSelected: boolean;
   onSelect: (task: Task) => void;
   onToggleComplete: (id: string, completed: boolean) => void;
+}
+
+function formatCompletedAt(iso: string): string {
+  const date = new Date(iso);
+  const d = date.toLocaleDateString();
+  const t = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return `${d} ${t}`;
 }
 
 /** A single row in the task list showing title, badges, and completion state. */
@@ -35,6 +42,12 @@ export function TaskRow({ task, isSelected, onSelect, onToggleComplete }: Props)
         </div>
 
         <div className="task-badges">
+          {task.completedAt ? (
+            <span className="badge badge-completed">
+              <Clock size={12} />
+              {formatCompletedAt(task.completedAt)}
+            </span>
+          ) : null}
           {task.dueDate ? (
             <span className="badge">
               <CalendarDays size={12} />
