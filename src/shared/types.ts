@@ -10,7 +10,6 @@ export type SmartViewId =
   | 'suggestions'
   | 'planned'
   | 'important'
-  | 'flagged-email'
   | 'completed';
 
 /** Union of system views and user-created lists (prefixed with "list:"). */
