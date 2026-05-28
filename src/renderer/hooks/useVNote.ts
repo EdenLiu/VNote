@@ -113,6 +113,16 @@ export function useVNote() {
     [withError],
   );
 
+  const generateWeeklyReport = useCallback(async (): Promise<string> => {
+    try {
+      const report = await window.vnote.generateWeeklyReport();
+      return report;
+    } catch (cause) {
+      setError(String(cause));
+      return '';
+    }
+  }, []);
+
   const lists = state?.lists ?? [];
   const categories = state?.categories ?? [];
   const tasks = state?.tasks ?? [];
@@ -139,5 +149,6 @@ export function useVNote() {
     toggleSuggestions,
     addToMyDay,
     addAttachment,
+    generateWeeklyReport,
   };
 }

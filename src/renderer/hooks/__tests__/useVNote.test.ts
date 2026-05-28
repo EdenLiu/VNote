@@ -52,6 +52,7 @@ describe('useVNote', () => {
       setListSuggestions: vi.fn(),
       refreshSuggestions: vi.fn().mockResolvedValue([]),
       addToMyDay: vi.fn().mockResolvedValue(mockTask()),
+      generateWeeklyReport: vi.fn().mockResolvedValue(''),
     };
   });
 

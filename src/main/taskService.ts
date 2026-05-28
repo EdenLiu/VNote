@@ -355,6 +355,49 @@ export class TaskService {
       .map((item) => item.task);
   }
 
+  generateWeeklyReport(): string {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday...
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7)); // go back to Monday
+    const mondayKey = monday.toISOString().slice(0, 10);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const sundayKey = sunday.toISOString().slice(0, 10);
+
+    const tasks = this.getTasks().filter(
+      (t) =>
+        t.completed &&
+        t.completedAt &&
+        t.completedAt >= mondayKey &&
+        t.completedAt <= `${sundayKey}T23:59:59.999Z`,
+    );
+
+    const listNames = new Map(this.getLists().map((l) => [l.id, l.name]));
+
+    // Group by list (project)
+    const grouped = new Map<string, string[]>();
+    for (const task of tasks) {
+      const name = listNames.get(task.listId) ?? 'Unknown';
+      const group = grouped.get(name) ?? [];
+      group.push(task.title);
+      grouped.set(name, group);
+    }
+
+    // Format as "Project Name:\n- task 1\n- task 2\n"
+    const lines: string[] = [];
+    for (const [name, titles] of grouped) {
+      lines.push(`${name}:`);
+      for (const title of titles) {
+        lines.push(`- ${title}`);
+      }
+      lines.push('');
+    }
+
+    return lines.join('\n').trim();
+  }
+
   private mapTask(row: Row): Task {
     const taskId = String(row.id);
     return {

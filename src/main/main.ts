@@ -29,6 +29,7 @@ function registerIpc() {
   ipcMain.handle('attachment:remove', (_event, id) => removeAttachment(service, id));
   ipcMain.handle('suggestions:refresh', () => service.getSuggestions());
   ipcMain.handle('myday:add', (_event, taskId, day) => service.addToMyDay(taskId, day));
+  ipcMain.handle('report:weekly', () => service.generateWeeklyReport());
 }
 
 async function createWindow() {

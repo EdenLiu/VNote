@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ListTodo } from 'lucide-react';
+import { FileText, ListTodo } from 'lucide-react';
 import type { Task, TaskPatch, ViewId } from '@shared/types';
 import { useVNote } from './hooks/useVNote';
 import { Sidebar } from './components/sidebar/Sidebar';
@@ -48,6 +48,7 @@ export function App() {
     toggleSuggestions,
     addToMyDay,
     addAttachment,
+    generateWeeklyReport,
   } = useVNote();
 
   const [activeView, setActiveView] = useState<ViewId>('list:inbox');
@@ -109,6 +110,20 @@ export function App() {
 
   const handleToggleComplete = (id: string, completed: boolean) => updateTask(id, { completed });
 
+  const handleWeeklyReport = async () => {
+    const report = await generateWeeklyReport();
+    if (report) {
+      try {
+        await navigator.clipboard.writeText(report);
+        alert('Weekly report copied to clipboard');
+      } catch {
+        alert(report);
+      }
+    } else {
+      alert('No tasks completed this week.');
+    }
+  };
+
   const todayKey = today();
 
   return (
@@ -117,6 +132,10 @@ export function App() {
       <Sidebar>
         <BrandHeader />
         <SmartViewsNav activeView={activeView} onViewChange={setActiveView} />
+        <button className="sidebar-report-btn" onClick={handleWeeklyReport}>
+          <FileText size={16} />
+          Weekly Report
+        </button>
         <ListsSection
           lists={lists}
           activeView={activeView}
