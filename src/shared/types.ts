@@ -190,6 +190,8 @@ export interface VNoteApi {
   refreshSuggestions(): Promise<Task[]>;
   /** Add a task to My Day for the given date (defaults to today). */
   addToMyDay(taskId: string, day?: string): Promise<Task>;
+  /** Generate a weekly report of tasks completed this week, grouped by project. */
+  generateWeeklyReport(): Promise<string>;
 }
 
 declare global {

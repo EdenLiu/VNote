@@ -698,6 +698,30 @@ button {
 }
 
 /* ===================================================================
+   Weekly Report Button
+   =================================================================== */
+
+.sidebar-report-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: transparent;
+  color: #334155;
+  font-weight: 600;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  width: 100%;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sidebar-report-btn:hover {
+  background: #eef4fb;
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+
+/* ===================================================================
    Utility
    =================================================================== */
 
