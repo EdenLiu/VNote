@@ -2,7 +2,18 @@ import { useState } from 'react';
 import { Plus, Trash2, Check, X, Pencil } from 'lucide-react';
 import type { TaskList, ViewId } from '@shared/types';
 
-const DEFAULT_COLORS = ['#2563eb', '#0f766e', '#7c3aed', '#dc2626', '#ca8a04', '#16a34a'];
+const PALETTE = ['#2563eb', '#0f766e', '#7c3aed', '#dc2626', '#ca8a04', '#16a34a'];
+
+/**
+ * Pick a random color from PALETTE that is different from the most recently
+ * used list colors, so each new list gets a visually distinct accent.
+ */
+function pickDistinctColor(existingColors: string[]): string {
+  const recent = existingColors.slice(-5);
+  const available = PALETTE.filter((c) => !recent.includes(c));
+  const pool = available.length > 0 ? available : PALETTE;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 interface Props {
   lists: TaskList[];
@@ -27,15 +38,14 @@ export function ListsSection({
   onToggleSuggestions,
 }: Props) {
   const [name, setName] = useState('');
-  const [color, setColor] = useState(DEFAULT_COLORS[0]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
 
   const handleCreate = async () => {
     if (!name.trim()) return;
+    const color = pickDistinctColor(lists.map((l) => l.color));
     await onCreateList(name.trim(), color);
     setName('');
-    setColor(DEFAULT_COLORS[0]);
   };
 
   const startEdit = (list: TaskList) => {
@@ -138,13 +148,6 @@ export function ListsSection({
             if (e.key === 'Enter') void handleCreate();
           }}
         />
-        <select value={color} onChange={(e) => setColor(e.target.value)}>
-          {DEFAULT_COLORS.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
         <button onClick={handleCreate} aria-label="Create list">
           <Plus size={14} />
         </button>
