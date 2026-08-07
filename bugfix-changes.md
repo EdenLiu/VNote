@@ -38,3 +38,21 @@ webPreferences: {
   sandbox: false
 }
 ```
+
+---
+
+# Bugfix: Remove "Flagged email" smart view (Issue #5)
+
+## Problem
+
+The left sidebar menu showed a "Flagged email" smart view, but this app cannot connect to Outlook, so the view could never show any tasks. It was dead UI.
+
+## Fix
+
+Removed the `flagged-email` smart view entirely:
+
+- `src/shared/types.ts` — removed `'flagged-email'` from the `SmartViewId` union so no code can reference the view anymore (type-level removal).
+- `src/renderer/App.tsx` — removed the `'flagged-email'` entry from `VIEW_LABELS` (toolbar title lookup).
+- `src/renderer/components/sidebar/SmartViewsNav.tsx` — removed the `'flagged-email'` entry from `VIEW_LABELS`, which drives the sidebar rendering (`Object.keys(VIEW_LABELS)`), so the menu item no longer appears.
+
+Verified with `npm run typecheck` and `npm run test` (95 tests pass).
