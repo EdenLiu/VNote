@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ELECTRON_CHANNELS } from '../shared/electron-api.js';
 import { addAttachment, openAttachment, removeAttachment } from './attachments.js';
 import { VNoteDatabase } from './database.js';
 import { ReminderScheduler } from './reminders.js';
@@ -25,6 +26,7 @@ function registerIpc() {
     ipcMain.handle('attachment:remove', (_event, id) => removeAttachment(service, id));
     ipcMain.handle('suggestions:refresh', () => service.getSuggestions());
     ipcMain.handle('myday:add', (_event, taskId, day) => service.addToMyDay(taskId, day));
+    ipcMain.handle(ELECTRON_CHANNELS.reports.weekly, () => service.getWeeklyReport());
 }
 async function createWindow() {
     const window = new BrowserWindow({

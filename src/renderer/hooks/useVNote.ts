@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { AppState, Task, TaskDraft, TaskPatch } from '@shared/types';
+import type { AppState, Task, TaskDraft, TaskPatch, WeeklyReportGroup } from '@shared/types';
 
 /**
  * Central state hook for VNote. Manages the full AppState, provides memoized
@@ -113,6 +113,18 @@ export function useVNote() {
     [withError],
   );
 
+  /** Read-only weekly report fetch — does not mutate app state, so no reload. */
+  const getWeeklyReport = useCallback(async (): Promise<WeeklyReportGroup[] | undefined> => {
+    try {
+      const result = await window.vnote.getWeeklyReport();
+      setError(null);
+      return result;
+    } catch (cause) {
+      setError(String(cause));
+      return undefined;
+    }
+  }, []);
+
   const lists = state?.lists ?? [];
   const categories = state?.categories ?? [];
   const tasks = state?.tasks ?? [];
@@ -139,5 +151,6 @@ export function useVNote() {
     toggleSuggestions,
     addToMyDay,
     addAttachment,
+    getWeeklyReport,
   };
 }

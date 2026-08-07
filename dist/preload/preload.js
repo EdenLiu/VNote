@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { ELECTRON_CHANNELS } from '../shared/electron-api.js';
 const api = {
     getState: () => ipcRenderer.invoke('state:get'),
     createTask: (draft) => ipcRenderer.invoke('task:create', draft),
@@ -16,5 +17,6 @@ const api = {
     setListSuggestions: (listId, enabled) => ipcRenderer.invoke('list:suggestions', listId, enabled),
     refreshSuggestions: () => ipcRenderer.invoke('suggestions:refresh'),
     addToMyDay: (taskId, day) => ipcRenderer.invoke('myday:add', taskId, day),
+    getWeeklyReport: () => ipcRenderer.invoke(ELECTRON_CHANNELS.reports.weekly),
 };
 contextBridge.exposeInMainWorld('vnote', api);

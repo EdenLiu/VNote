@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ListTodo } from 'lucide-react';
+import { CalendarRange, ListTodo } from 'lucide-react';
 import type { Task, TaskPatch, ViewId } from '@shared/types';
 import { useVNote } from './hooks/useVNote';
 import { Sidebar } from './components/sidebar/Sidebar';
@@ -17,6 +17,7 @@ import { AttachmentsSection } from './components/detail/AttachmentsSection';
 import { MetaSection } from './components/detail/MetaSection';
 import { EmptyState } from './components/common/EmptyState';
 import { ErrorBanner } from './components/common/ErrorBanner';
+import { WeeklyReportModal } from './components/common/WeeklyReportModal';
 
 const VIEW_LABELS: Record<string, string> = {
   'my-day': 'My Day',
@@ -47,11 +48,13 @@ export function App() {
     toggleSuggestions,
     addToMyDay,
     addAttachment,
+    getWeeklyReport,
   } = useVNote();
 
   const [activeView, setActiveView] = useState<ViewId>('list:inbox');
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>();
   const [detailDraft, setDetailDraft] = useState<Partial<Task>>({});
+  const [weeklyReportOpen, setWeeklyReportOpen] = useState(false);
 
   // Derive the selected task
   const selectedTask = useMemo(
@@ -140,6 +143,14 @@ export function App() {
             <div className="view-meta">{visibleTasks.length} tasks</div>
           </div>
           <div className="toolbar-spacer" />
+          <button
+            className="toolbar-report-button"
+            onClick={() => setWeeklyReportOpen(true)}
+            title="Weekly Report"
+          >
+            <CalendarRange size={16} />
+            Weekly Report
+          </button>
         </header>
 
         {error ? <ErrorBanner message={error} onDismiss={() => setError(null)} /> : null}
@@ -248,6 +259,13 @@ export function App() {
           </DetailPane>
         </div>
       </section>
+
+      {weeklyReportOpen ? (
+        <WeeklyReportModal
+          onClose={() => setWeeklyReportOpen(false)}
+          fetchReport={getWeeklyReport}
+        />
+      ) : null}
     </div>
   );
 }

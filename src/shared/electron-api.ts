@@ -37,4 +37,8 @@ export const ELECTRON_CHANNELS = {
     /** Add a task to today's My Day view. */
     add: 'myday:add',
   },
+  reports: {
+    /** Tasks completed this week, grouped by list. */
+    weekly: 'report:weekly',
+  },
 } as const;

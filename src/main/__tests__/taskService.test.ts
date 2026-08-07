@@ -552,4 +552,128 @@ describe('TaskService', () => {
       expect(() => service.getAttachment(attachment.id)).toThrow('Attachment not found');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // getWeeklyReport
+  // ---------------------------------------------------------------------------
+  describe('getWeeklyReport', () => {
+    // Exposes the raw DB so tests can inject deterministic completed_at timestamps.
+    async function serviceWithDb() {
+      const testDb = await createTestDb();
+      return { service: new TaskService(testDb as unknown as VNoteDatabase), db: testDb };
+    }
+
+    // Mirrors the service's local-time Monday-00:00 computation for assertions.
+    function startOfWeek() {
+      const now = new Date();
+      const day = now.getDay();
+      const monday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() - (day === 0 ? 6 : day - 1),
+      );
+      monday.setHours(0, 0, 0, 0);
+      return monday;
+    }
+
+    it('groups tasks completed this week by list, in list creation order', async () => {
+      const { service } = await serviceWithDb();
+      const inbox = service.createTask({ title: 'inbox task', listId: 'inbox' });
+      const work = service.createTask({ title: 'work task', listId: 'work' });
+      service.updateTask(inbox.id, { completed: true });
+      service.updateTask(work.id, { completed: true });
+
+      const report = service.getWeeklyReport();
+      expect(report).toHaveLength(2);
+      expect(report[0].listName).toBe('Tasks');
+      expect(report[0].tasks.map((t) => t.title)).toEqual(['inbox task']);
+      expect(report[1].listName).toBe('Work');
+      expect(report[1].tasks.map((t) => t.title)).toEqual(['work task']);
+    });
+
+    it('orders tasks within a list by completion time (oldest first)', async () => {
+      const { service, db } = await serviceWithDb();
+      const first = service.createTask({ title: 'older', listId: 'inbox' });
+      const second = service.createTask({ title: 'newer', listId: 'inbox' });
+      service.updateTask(first.id, { completed: true });
+      service.updateTask(second.id, { completed: true });
+      const weekStart = startOfWeek();
+      db.run('UPDATE tasks SET completed_at = ? WHERE id = ?', [
+        new Date(weekStart.getTime() + 1000).toISOString(),
+        first.id,
+      ]);
+      db.run('UPDATE tasks SET completed_at = ? WHERE id = ?', [
+        new Date(weekStart.getTime() + 2000).toISOString(),
+        second.id,
+      ]);
+
+      const report = service.getWeeklyReport();
+      expect(report[0].tasks.map((t) => t.title)).toEqual(['older', 'newer']);
+    });
+
+    it('excludes tasks completed before the week start', async () => {
+      const { service, db } = await serviceWithDb();
+      const task = service.createTask({ title: 'last week', listId: 'inbox' });
+      service.updateTask(task.id, { completed: true });
+      db.run('UPDATE tasks SET completed_at = ? WHERE id = ?', [
+        new Date(startOfWeek().getTime() - 1).toISOString(),
+        task.id,
+      ]);
+
+      expect(service.getWeeklyReport()).toEqual([]);
+    });
+
+    it('includes tasks completed exactly at week start', async () => {
+      const { service, db } = await serviceWithDb();
+      const task = service.createTask({ title: 'exactly monday', listId: 'inbox' });
+      service.updateTask(task.id, { completed: true });
+      db.run('UPDATE tasks SET completed_at = ? WHERE id = ?', [
+        new Date(startOfWeek().getTime()).toISOString(),
+        task.id,
+      ]);
+
+      const report = service.getWeeklyReport();
+      expect(report).toHaveLength(1);
+      expect(report[0].tasks.map((t) => t.title)).toEqual(['exactly monday']);
+    });
+
+    it('excludes tasks completed after now', async () => {
+      const { service, db } = await serviceWithDb();
+      const task = service.createTask({ title: 'future', listId: 'inbox' });
+      service.updateTask(task.id, { completed: true });
+      db.run('UPDATE tasks SET completed_at = ? WHERE id = ?', [
+        new Date(Date.now() + 3600000).toISOString(),
+        task.id,
+      ]);
+
+      expect(service.getWeeklyReport()).toEqual([]);
+    });
+
+    it('returns an empty array when nothing was completed this week', async () => {
+      const { service } = await serviceWithDb();
+      service.createTask({ title: 'not done', listId: 'inbox' });
+      service.createTask({ title: 'also not done', listId: 'work' });
+
+      expect(service.getWeeklyReport()).toEqual([]);
+    });
+
+    it('ignores tasks without completedAt', async () => {
+      const { service, db } = await serviceWithDb();
+      const task = service.createTask({ title: 'no timestamp', listId: 'inbox' });
+      service.updateTask(task.id, { completed: true });
+      db.run('UPDATE tasks SET completed_at = NULL WHERE id = ?', [task.id]);
+
+      expect(service.getWeeklyReport()).toEqual([]);
+    });
+
+    it('excludes groups with no completed tasks this week', async () => {
+      const { service } = await serviceWithDb();
+      const task = service.createTask({ title: 'only inbox', listId: 'inbox' });
+      service.updateTask(task.id, { completed: true });
+
+      const report = service.getWeeklyReport();
+      expect(report).toHaveLength(1);
+      expect(report[0].listName).toBe('Tasks');
+    });
+  });
 });

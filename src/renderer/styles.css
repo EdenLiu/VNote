@@ -313,6 +313,104 @@ button {
 }
 
 /* ===================================================================
+   Weekly Report
+   =================================================================== */
+
+.toolbar-report-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  flex-shrink: 0;
+}
+
+.toolbar-report-button:hover {
+  background: #eef4fb;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+}
+
+.modal {
+  width: min(560px, 90vw);
+  max-height: 80vh;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 80px;
+}
+
+.modal-message {
+  color: #64748b;
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+.report-text {
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.modal-copy-button {
+  width: auto;
+  margin-top: 0;
+  padding: 8px 14px;
+}
+
+.copy-confirmation {
+  color: #16a34a;
+  font-size: 12px;
+}
+
+/* ===================================================================
    Content Grid
    =================================================================== */
 
