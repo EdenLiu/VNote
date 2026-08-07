@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { ELECTRON_CHANNELS } from '../shared/electron-api.js';
 import type { VNoteApi } from '../shared/types.js';
 
 const api: VNoteApi = {
@@ -18,6 +19,7 @@ const api: VNoteApi = {
   setListSuggestions: (listId, enabled) => ipcRenderer.invoke('list:suggestions', listId, enabled),
   refreshSuggestions: () => ipcRenderer.invoke('suggestions:refresh'),
   addToMyDay: (taskId, day) => ipcRenderer.invoke('myday:add', taskId, day),
+  getWeeklyReport: () => ipcRenderer.invoke(ELECTRON_CHANNELS.reports.weekly),
 };
 
 contextBridge.exposeInMainWorld('vnote', api);

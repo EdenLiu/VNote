@@ -11,12 +11,26 @@ import type {
   TaskListDraft,
   TaskListPatch,
   TaskPatch,
+  WeeklyReportGroup,
 } from '../shared/types.js';
 import { VNoteDatabase, type Row } from './database.js';
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const nowIso = () => new Date().toISOString();
 const newId = () => crypto.randomUUID();
+
+/** Local-time start of the current week (Monday 00:00:00.000). */
+const startOfWeek = () => {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sunday
+  const monday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - (day === 0 ? 6 : day - 1),
+  );
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+};
 
 const extractTags = (text: string) =>
   Array.from(
@@ -353,6 +367,32 @@ export class TaskService {
       .sort((a, b) => b.score - a.score || a.task.createdAt.localeCompare(b.task.createdAt))
       .slice(0, 12)
       .map((item) => item.task);
+  }
+
+  /**
+   * Tasks completed this week (Monday 00:00 local → now), grouped by list
+   * in list-creation order; tasks within a group ordered by completion time.
+   */
+  getWeeklyReport(): WeeklyReportGroup[] {
+    const now = Date.now();
+    const weekStart = startOfWeek().getTime();
+    const groups = new Map<string, WeeklyReportGroup>(
+      this.getLists().map((list) => [list.id, { listId: list.id, listName: list.name, tasks: [] }]),
+    );
+
+    for (const task of this.getTasks()) {
+      if (!task.completedAt) continue; // repeating tasks stay active — no completedAt
+      const completed = new Date(task.completedAt).getTime();
+      if (Number.isNaN(completed) || completed < weekStart || completed > now) continue;
+      groups.get(task.listId)?.tasks.push({ title: task.title, completedAt: task.completedAt });
+    }
+
+    return [...groups.values()]
+      .map((group) => ({
+        ...group,
+        tasks: group.tasks.sort((a, b) => a.completedAt.localeCompare(b.completedAt)),
+      }))
+      .filter((group) => group.tasks.length > 0);
   }
 
   private mapTask(row: Row): Task {
