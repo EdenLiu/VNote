@@ -209,12 +209,11 @@ button {
 
 .inline-create {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto;
   gap: 8px;
 }
 
-.inline-create input,
-.inline-create select {
+.inline-create input {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 10px 12px;
