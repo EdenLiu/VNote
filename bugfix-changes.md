@@ -135,3 +135,27 @@ Project Name 2:
   reported are pre-existing in `src/renderer/components/sidebar/Sidebar.tsx`, unchanged here)
 - Manual smoke test: `npm run dev:electron` → complete tasks across lists → open
   "Weekly Report" → verify grouping/ordering, copy → paste matches the modal text.
+
+---
+
+# Bugfix: Remove list color picker, auto-assign random color (Issue #7)
+
+## Problem
+
+When creating a new list ("项目"), the sidebar showed a color dropdown (`<select>`) letting the user pick from 6 preset hex colors. The requirement was to remove the color picker and instead auto-assign a random color that differs from the most recently created list's color.
+
+## Fix
+
+`src/renderer/components/sidebar/ListsSection.tsx`:
+
+- Removed the `color` state and the `<select>` color dropdown from the inline create row.
+- Added a `pickRandomColor(lists)` helper: filters the `DEFAULT_COLORS` palette down to colors that differ from the most recently created list's color (`lists[lists.length - 1]` — lists are ordered by `created_at ASC` in the main process), then picks one at random.
+- `handleCreate` now calls `onCreateList(name, pickRandomColor(lists))` instead of the user-picked color.
+
+`src/renderer/styles.css`:
+
+- `.inline-create` grid changed from 3 columns (`1fr auto auto`) to 2 columns (`1fr auto`), and the `select` rule was dropped from the shared input/select style block.
+
+The `createList` IPC API is unchanged — the renderer still passes a color, it's just chosen automatically now.
+
+Verified with `npm run typecheck` and `npm run test` (95 tests pass).

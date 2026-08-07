@@ -4,6 +4,13 @@ import type { TaskList, ViewId } from '@shared/types';
 
 const DEFAULT_COLORS = ['#2563eb', '#0f766e', '#7c3aed', '#dc2626', '#ca8a04', '#16a34a'];
 
+/** Pick a random palette color, avoiding the most recently created list's color. */
+const pickRandomColor = (lists: TaskList[]): string => {
+  const lastColor = lists[lists.length - 1]?.color;
+  const candidates = DEFAULT_COLORS.filter((c) => c !== lastColor);
+  return candidates[Math.floor(Math.random() * candidates.length)];
+};
+
 interface Props {
   lists: TaskList[];
   activeView: ViewId;
@@ -27,15 +34,13 @@ export function ListsSection({
   onToggleSuggestions,
 }: Props) {
   const [name, setName] = useState('');
-  const [color, setColor] = useState(DEFAULT_COLORS[0]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
 
   const handleCreate = async () => {
     if (!name.trim()) return;
-    await onCreateList(name.trim(), color);
+    await onCreateList(name.trim(), pickRandomColor(lists));
     setName('');
-    setColor(DEFAULT_COLORS[0]);
   };
 
   const startEdit = (list: TaskList) => {
@@ -138,13 +143,6 @@ export function ListsSection({
             if (e.key === 'Enter') void handleCreate();
           }}
         />
-        <select value={color} onChange={(e) => setColor(e.target.value)}>
-          {DEFAULT_COLORS.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
         <button onClick={handleCreate} aria-label="Create list">
           <Plus size={14} />
         </button>
