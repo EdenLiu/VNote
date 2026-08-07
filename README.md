@@ -47,6 +47,26 @@ npm run dev:electron     # 启动 Electron 开发模式
 | `npm run build:main` | 仅构建主进程 + preload → dist/ |
 | `npm run typecheck` | TypeScript 类型检查（renderer + main） |
 | `npm run test` | 运行 Vitest 测试 |
+| `npm run dist` | 打包 Windows 安装包 + 便携版 exe → release/ |
+| `npm run pack` | 仅打包未压缩目录（调试用）→ release/win-unpacked/ |
+
+## 打包成 exe
+
+```bash
+npm run dist
+```
+
+产物输出到 `release/` 目录：
+
+| 文件 | 说明 |
+|------|------|
+| `VNote Setup 0.1.0.exe` | 安装包：可选安装目录，自动创建桌面/开始菜单快捷方式 |
+| `VNote 0.1.0.exe` | 便携版：单文件，双击即用，无需安装 |
+| `win-unpacked/` | 未压缩目录（`npm run pack` 生成），调试用 |
+
+- 首次打包需要联网下载 Electron 运行时和 NSIS 工具（缓存在本地，之后很快）
+- 数据（数据库、附件）保存在 `%APPDATA%\VNote\`，重装/升级不会丢失
+- 目前使用 Electron 默认图标；如需自定义，放一个 `build/icon.ico` 后重新打包即可
 
 ## 代码质量
 

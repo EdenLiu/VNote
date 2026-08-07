@@ -19,7 +19,7 @@ export class VNoteDatabase {
     if (!sqlRuntime) {
       sqlRuntime = await initSqlJs({
         locateFile: (file: string) =>
-          path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', file),
+          path.join(app.getAppPath(), 'node_modules', 'sql.js', 'dist', file),
       });
     }
 

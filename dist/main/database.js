@@ -14,7 +14,7 @@ export class VNoteDatabase {
     static async open() {
         if (!sqlRuntime) {
             sqlRuntime = await initSqlJs({
-                locateFile: (file) => path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', file),
+                locateFile: (file) => path.join(app.getAppPath(), 'node_modules', 'sql.js', 'dist', file),
             });
         }
         const dataDir = app.getPath('userData');

@@ -15,14 +15,11 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
     "lint": "eslint src/",
-    "quality": "npm run format:check && npm run lint && npm run typecheck"
+    "quality": "npm run format:check && npm run lint && npm run typecheck",
+    "dist": "npm run build && electron-builder",
+    "pack": "npm run build && electron-builder --dir"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "^5.1.1",
-    "electron": "^39.2.6",
-    "lucide-react": "^0.556.0",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
     "sql.js": "^1.13.0"
   },
   "devDependencies": {
@@ -33,17 +30,46 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
+    "electron": "^39.2.6",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.4.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "jsdom": "^29.1.1",
+    "lucide-react": "^0.556.0",
     "prettier": "^3.8.3",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.4",
     "vite": "^7.2.4",
     "vitest": "^4.0.14",
     "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.vnote.app",
+    "productName": "VNote",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "VNote"
+    }
   }
 }
