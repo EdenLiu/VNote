@@ -50,6 +50,7 @@ function openApp() {
         repeat: 'daily',
         source: 'manual',
         important: false,
+        urgent: false,
         completed: false,
         notes: 'Third-floor fittings',
         steps: [],
