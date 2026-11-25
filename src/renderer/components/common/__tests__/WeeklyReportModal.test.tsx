@@ -2,7 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { WeeklyReportGroup } from '@shared/types';
-import { WeeklyReportModal, formatWeeklyReport } from '../WeeklyReportModal';
+import { WeeklyReportModal } from '../WeeklyReportModal';
+import { formatWeeklyReport } from '../weeklyReportFormat';
 
 const groups: WeeklyReportGroup[] = [
   {

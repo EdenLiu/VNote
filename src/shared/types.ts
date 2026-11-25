@@ -170,6 +170,8 @@ export interface AttachmentResult {
 export interface WeeklyReportTask {
   taskId: string;
   title: string;
+  /** Optional phrasing for an AI draft. The title and completion facts stay local. */
+  wording?: string;
   /** Most recent included completion, in UTC. */
   completedAt: string;
   /** Present when the total includes recurring occurrences. */
@@ -179,6 +181,7 @@ export interface WeeklyReportTask {
 export interface WeeklyReportDueTask {
   taskId: string;
   title: string;
+  wording?: string;
   dueDate: string;
 }
 
@@ -207,6 +210,8 @@ export interface VNoteApi {
   createTask(draft: TaskDraft): Promise<Task>;
   /** Apply a partial update to an existing task. */
   updateTask(id: string, patch: TaskPatch): Promise<Task>;
+  /** Shift both planned dates by calendar days, preserving the delivery date. */
+  moveTaskPlan(id: string, days: number): Promise<Task>;
   /** Permanently delete a task and its children (steps, attachments, tags). */
   deleteTask(id: string): Promise<void>;
   /** Create a new user list. */
@@ -240,6 +245,7 @@ export interface VNoteApi {
   addToMyDay(taskId: string, day?: string): Promise<Task>;
   /** Weekly completions and outstanding deadlines, grouped by list. */
   getWeeklyReport(): Promise<WeeklyReportGroup[]>;
+  generateWeeklyReportDraft(): Promise<WeeklyReportGroup[]>;
 }
 
 declare global {

@@ -42,6 +42,7 @@ describe('useVNote', () => {
       getState: vi.fn().mockResolvedValue(mockState()),
       createTask: vi.fn().mockResolvedValue(mockTask()),
       updateTask: vi.fn().mockResolvedValue(mockTask()),
+      moveTaskPlan: vi.fn(),
       deleteTask: vi.fn().mockResolvedValue(undefined),
       createList: vi.fn(),
       updateList: vi.fn(),
@@ -58,6 +59,7 @@ describe('useVNote', () => {
       acceptAiRecommendation: vi.fn(),
       addToMyDay: vi.fn().mockResolvedValue(mockTask()),
       getWeeklyReport: vi.fn().mockResolvedValue([]),
+      generateWeeklyReportDraft: vi.fn().mockResolvedValue([]),
     };
   });
 

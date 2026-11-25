@@ -19,6 +19,9 @@ function registerIpc() {
   ipcMain.handle('state:get', () => service.getState());
   ipcMain.handle('task:create', (_event, draft) => service.createTask(draft));
   ipcMain.handle('task:update', (_event, id, patch) => service.updateTask(id, patch));
+  ipcMain.handle(ELECTRON_CHANNELS.tasks.movePlan, (_event, id, days) =>
+    service.moveTaskPlan(id, days),
+  );
   ipcMain.handle('task:delete', (_event, id) => service.deleteTask(id));
   ipcMain.handle('list:create', (_event, draft) => service.createList(draft));
   ipcMain.handle('list:update', (_event, listId, patch) => service.updateList(listId, patch));
@@ -39,6 +42,9 @@ function registerIpc() {
   );
   ipcMain.handle('myday:add', (_event, taskId, day) => service.addToMyDay(taskId, day));
   ipcMain.handle(ELECTRON_CHANNELS.reports.weekly, () => service.getWeeklyReport());
+  ipcMain.handle(ELECTRON_CHANNELS.reports.generateDraft, () =>
+    service.generateWeeklyReportDraft(),
+  );
 }
 
 async function createWindow() {

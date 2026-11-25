@@ -11,6 +11,7 @@ export const ELECTRON_CHANNELS = {
   tasks: {
     create: 'task:create',
     update: 'task:update',
+    movePlan: 'task:move-plan',
     delete: 'task:delete',
   },
   lists: {
@@ -43,5 +44,6 @@ export const ELECTRON_CHANNELS = {
   reports: {
     /** Tasks completed this week, grouped by list. */
     weekly: 'report:weekly',
+    generateDraft: 'report:generate-draft',
   },
 } as const;

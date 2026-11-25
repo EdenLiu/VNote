@@ -17,6 +17,40 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+it('moves a whole plan forward and back across a month and retains the deadline after reopening', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  const folder = mkdtempSync(path.join(tmpdir(), 'vnote-move-plan-'));
+  const require = createRequire(import.meta.url);
+  vi.mocked(app.getPath).mockReturnValue(folder);
+  vi.mocked(app.getAppPath).mockReturnValue(path.resolve(require.resolve('sql.js'), '../../../..'));
+  try {
+    const service = new TaskService(await VNoteDatabase.open());
+    const task = service.createTask({
+      title: 'Review',
+      listId: 'work',
+      plannedStartDate: '2026-10-26',
+      plannedEndDate: '2026-10-28',
+      dueDate: '2026-10-30',
+    });
+    service.moveTaskPlan(task.id, 5);
+    const reopened = new TaskService(await VNoteDatabase.open());
+    expect(reopened.getTask(task.id)).toMatchObject({
+      plannedStartDate: '2026-10-31',
+      plannedEndDate: '2026-11-02',
+      dueDate: '2026-10-30',
+    });
+    reopened.moveTaskPlan(task.id, -6);
+    const final = new TaskService(await VNoteDatabase.open());
+    expect(final.getTask(task.id)).toMatchObject({
+      plannedStartDate: '2026-10-25',
+      plannedEndDate: '2026-10-27',
+      dueDate: '2026-10-30',
+    });
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+});
+
 it('creates a task with a partial plan independently of its deadline', async () => {
   const service = new TaskService((await createTestDb()) as unknown as VNoteDatabase);
   const review = service.createTask({

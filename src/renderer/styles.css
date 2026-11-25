@@ -420,6 +420,28 @@ button {
   text-decoration: underline;
 }
 
+.report-mode {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.report-editor {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.report-replacement {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .modal-footer {
   display: flex;
   align-items: center;

@@ -8,6 +8,7 @@ const api: VNoteApi = {
   getState: () => ipcRenderer.invoke('state:get'),
   createTask: (draft) => ipcRenderer.invoke('task:create', draft),
   updateTask: (id, patch) => ipcRenderer.invoke('task:update', id, patch),
+  moveTaskPlan: (id, days) => ipcRenderer.invoke(ELECTRON_CHANNELS.tasks.movePlan, id, days),
   deleteTask: (id) => ipcRenderer.invoke('task:delete', id),
   createList: (draft) => ipcRenderer.invoke('list:create', draft),
   updateList: (id, patch) => ipcRenderer.invoke('list:update', id, patch),
@@ -24,6 +25,7 @@ const api: VNoteApi = {
   acceptAiRecommendation: (id) => ipcRenderer.invoke(ELECTRON_CHANNELS.suggestions.accept, id),
   addToMyDay: (taskId, day) => ipcRenderer.invoke('myday:add', taskId, day),
   getWeeklyReport: () => ipcRenderer.invoke(ELECTRON_CHANNELS.reports.weekly),
+  generateWeeklyReportDraft: () => ipcRenderer.invoke(ELECTRON_CHANNELS.reports.generateDraft),
 };
 
 contextBridge.exposeInMainWorld('vnote', api);
