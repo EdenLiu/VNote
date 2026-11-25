@@ -14,6 +14,15 @@ import type {
   WeeklyReportGroup,
 } from '../shared/types.js';
 import { VNoteDatabase, type Row } from './database.js';
+import type { AiSettingsPatch } from '../shared/ai.js';
+import {
+  readAiSettings,
+  readAiTasks,
+  requestAiCompletion,
+  writeAiSettings,
+  type AiSecretStore,
+  type AiTaskScope,
+} from './ai.js';
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const nowIso = () => new Date().toISOString();
@@ -47,7 +56,26 @@ const addRepeatPeriod = (value: string | undefined, repeat: RepeatFrequency) => 
 };
 
 export class TaskService {
-  constructor(private readonly db: VNoteDatabase) {}
+  constructor(
+    private readonly db: VNoteDatabase,
+    private readonly secrets?: AiSecretStore,
+  ) {}
+
+  getAiSettings() {
+    return readAiSettings(this.db);
+  }
+
+  getAiTasks(scope: AiTaskScope, day = new Date().toLocaleDateString('en-CA')) {
+    return readAiTasks(this.db, scope, day);
+  }
+
+  requestAi(instructions: string, data: unknown) {
+    return requestAiCompletion(this.db, this.secrets, instructions, data);
+  }
+
+  saveAiSettings(patch: AiSettingsPatch) {
+    return writeAiSettings(this.db, patch, this.secrets);
+  }
 
   getState(): AppState {
     return {

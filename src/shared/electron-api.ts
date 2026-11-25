@@ -3,6 +3,7 @@
  * Using a const object ensures channel names stay in sync.
  */
 export const ELECTRON_CHANNELS = {
+  aiSettings: { get: 'ai-settings:get', save: 'ai-settings:save' },
   state: {
     /** Fetch full application state. */
     get: 'state:get',

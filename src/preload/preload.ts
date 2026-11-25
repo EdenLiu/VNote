@@ -3,6 +3,8 @@ import { ELECTRON_CHANNELS } from '../shared/electron-api.js';
 import type { VNoteApi } from '../shared/types.js';
 
 const api: VNoteApi = {
+  getAiSettings: () => ipcRenderer.invoke(ELECTRON_CHANNELS.aiSettings.get),
+  saveAiSettings: (patch) => ipcRenderer.invoke(ELECTRON_CHANNELS.aiSettings.save, patch),
   getState: () => ipcRenderer.invoke('state:get'),
   createTask: (draft) => ipcRenderer.invoke('task:create', draft),
   updateTask: (id, patch) => ipcRenderer.invoke('task:update', id, patch),

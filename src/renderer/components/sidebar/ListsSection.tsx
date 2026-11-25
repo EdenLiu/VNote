@@ -112,11 +112,13 @@ export function ListsSection({
               </button>
               <button
                 className="text-button"
+                aria-label={`Suggestions for ${list.name}`}
+                aria-pressed={list.includeInSuggestions}
                 onClick={async () => {
                   await onToggleSuggestions(list.id, !list.includeInSuggestions);
                 }}
               >
-                {list.includeInSuggestions ? 'On' : 'Off'}
+                Suggestions {list.includeInSuggestions ? 'on' : 'off'}
               </button>
               <button
                 className="text-button danger"
