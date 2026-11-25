@@ -13,7 +13,6 @@ export function Sidebar({ children }: Props) {
     return saved ? Number(saved) : MIN_WIDTH;
   });
   const widthRef = useRef(width);
-  widthRef.current = width;
 
   const dragging = useRef(false);
   const startX = useRef(0);
