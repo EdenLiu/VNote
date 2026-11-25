@@ -138,6 +138,15 @@ export class VNoteDatabase {
         task_id TEXT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
         day TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS ai_list_access (
+        list_id TEXT PRIMARY KEY REFERENCES lists(id) ON DELETE CASCADE
+      );
+      CREATE TABLE IF NOT EXISTS ai_settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        base_url TEXT NOT NULL, model TEXT NOT NULL, encrypted_key TEXT,
+        include_notes INTEGER NOT NULL DEFAULT 0
+      );
     `);
   }
 

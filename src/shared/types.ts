@@ -1,3 +1,5 @@
+import type { AiSettings, AiSettingsPatch } from './ai.js';
+
 /** Priority level for a task — "important" is the starred/flagged state. */
 export type TaskPriority = 'normal' | 'important';
 
@@ -169,6 +171,8 @@ export interface WeeklyReportGroup {
  * Every method maps to an IPC handler in the main process.
  */
 export interface VNoteApi {
+  getAiSettings(): Promise<AiSettings>;
+  saveAiSettings(patch: AiSettingsPatch): Promise<AiSettings>;
   /** Fetch the full application state (lists, categories, tasks). */
   getState(): Promise<AppState>;
   /** Create a new task and return it with all server-generated fields. */

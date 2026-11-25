@@ -36,6 +36,8 @@ describe('useVNote', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     window.vnote = {
+      getAiSettings: vi.fn(),
+      saveAiSettings: vi.fn(),
       getState: vi.fn().mockResolvedValue(mockState()),
       createTask: vi.fn().mockResolvedValue(mockTask()),
       updateTask: vi.fn().mockResolvedValue(mockTask()),
