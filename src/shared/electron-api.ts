@@ -34,6 +34,8 @@ export const ELECTRON_CHANNELS = {
   suggestions: {
     /** Re-run the suggestion scoring algorithm. */
     refresh: 'suggestions:refresh',
+    recommend: 'suggestions:recommend',
+    accept: 'suggestions:accept',
   },
   myDay: {
     /** Add a task to today's My Day view. */

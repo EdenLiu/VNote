@@ -8,6 +8,7 @@ import { AiSettingsButton } from './components/common/AiSettings';
 import { SmartViewsNav } from './components/sidebar/SmartViewsNav';
 import { ListsSection } from './components/sidebar/ListsSection';
 import { TaskList } from './components/tasklist/TaskList';
+import { SuggestionsView } from './components/tasklist/SuggestionsView';
 import { GanttView } from './components/planning/GanttView';
 import { QuadrantsView } from './components/planning/QuadrantsView';
 import { DetailPane } from './components/detail/DetailPane';
@@ -31,10 +32,9 @@ const VIEW_LABELS: Record<string, string> = {
   completed: 'Completed',
 };
 
-const today = () => new Date().toISOString().slice(0, 10);
-
 export function App() {
   const {
+    todayKey,
     lists,
     categories,
     tasks,
@@ -52,6 +52,7 @@ export function App() {
     updateStep,
     toggleSuggestions,
     addToMyDay,
+    acceptAiRecommendation,
     addAttachment,
     getWeeklyReport,
   } = useVNote();
@@ -60,6 +61,7 @@ export function App() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>();
   const [detailDraft, setDetailDraft] = useState<Partial<Task>>({});
   const [weeklyReportOpen, setWeeklyReportOpen] = useState(false);
+  const [aiSettingsRevision, setAiSettingsRevision] = useState(0);
   const [showGantt, setShowGantt] = useState(false);
   const currentList = lists.find((list) => activeView === `list:${list.id}`);
 
@@ -76,7 +78,6 @@ export function App() {
 
   // Compute visible tasks based on active view
   const visibleTasks = useMemo(() => {
-    const todayKey = today();
     switch (activeView) {
       case 'suggestions':
         return suggestions;
@@ -99,7 +100,7 @@ export function App() {
         }
         return tasks;
     }
-  }, [activeView, tasks, suggestions]);
+  }, [activeView, tasks, suggestions, todayKey]);
 
   // Get the target list ID for quick-add
   const quickAddListId = useMemo(() => {
@@ -120,7 +121,18 @@ export function App() {
 
   const handleToggleComplete = (id: string, completed: boolean) => updateTask(id, { completed });
 
-  const todayKey = today();
+  const taskList = (
+    <TaskList
+      tasks={visibleTasks}
+      selectedTaskId={selectedTaskId}
+      quickAddListId={quickAddListId}
+      lists={lists}
+      activeView={activeView}
+      onSelectTask={handleSelectTask}
+      onToggleComplete={handleToggleComplete}
+      onCreateTask={handleCreateTask}
+    />
+  );
 
   return (
     <div className="layout">
@@ -137,7 +149,7 @@ export function App() {
           onDeleteList={(id) => deleteList(id)}
           onToggleSuggestions={(listId, enabled) => toggleSuggestions(listId, enabled)}
         />
-        <AiSettingsButton />
+        <AiSettingsButton onSaved={() => setAiSettingsRevision((version) => version + 1)} />
       </Sidebar>
 
       {/* ===== MAIN PANE ===== */}
@@ -150,7 +162,7 @@ export function App() {
                 lists.find((l) => `list:${l.id}` === activeView)?.name ??
                 'List'}
             </div>
-            {activeView !== 'quadrants' && (
+            {activeView !== 'quadrants' && activeView !== 'suggestions' && (
               <div className="view-meta">{visibleTasks.length} tasks</div>
             )}
           </div>
@@ -181,6 +193,7 @@ export function App() {
         >
           {activeView === 'quadrants' ? (
             <QuadrantsView
+              day={todayKey}
               tasks={visibleTasks}
               lists={lists}
               onSelectTask={handleSelectTask}
@@ -193,17 +206,19 @@ export function App() {
               onMovePlan={moveTaskPlan}
               onSelectTask={handleSelectTask}
             />
-          ) : (
-            <TaskList
-              tasks={visibleTasks}
-              selectedTaskId={selectedTaskId}
-              quickAddListId={quickAddListId}
+          ) : activeView === 'suggestions' ? (
+            <SuggestionsView
+              key={`${todayKey}-${aiSettingsRevision}`}
+              tasks={tasks}
               lists={lists}
-              activeView={activeView}
-              onSelectTask={handleSelectTask}
-              onToggleComplete={handleToggleComplete}
-              onCreateTask={handleCreateTask}
-            />
+              today={todayKey}
+              onOpen={handleSelectTask}
+              onAccept={acceptAiRecommendation}
+            >
+              {taskList}
+            </SuggestionsView>
+          ) : (
+            taskList
           )}
 
           {/* ===== DETAIL PANE ===== */}

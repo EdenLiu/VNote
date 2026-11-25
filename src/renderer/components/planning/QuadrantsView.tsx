@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { Task, TaskList, TaskPatch } from '@shared/types';
-import { isTaskUrgent, localDateKey } from '@shared/urgency';
+import { isTaskUrgent } from '@shared/urgency';
 import './quadrants.css';
 
 const quadrants = [
@@ -11,31 +11,15 @@ const quadrants = [
 ];
 
 interface Props {
+  day: string;
   tasks: Task[];
   lists: TaskList[];
   onSelectTask: (task: Task) => void;
   onUpdateTask: (id: string, patch: TaskPatch) => void;
 }
 
-export function QuadrantsView({ tasks, lists, onSelectTask, onUpdateTask }: Props) {
+export function QuadrantsView({ day, tasks, lists, onSelectTask, onUpdateTask }: Props) {
   const [filter, setFilter] = useState('');
-  const [day, setDay] = useState(() => localDateKey(new Date()));
-  useEffect(() => {
-    let timer: number;
-    const sync = () => {
-      const now = new Date();
-      setDay(localDateKey(now));
-      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      window.clearTimeout(timer);
-      timer = window.setTimeout(sync, midnight.getTime() - now.getTime());
-    };
-    sync();
-    window.addEventListener('focus', sync);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener('focus', sync);
-    };
-  }, []);
   const listId = lists.some((list) => list.id === filter) ? filter : '';
   const visible = listId ? tasks.filter((task) => task.listId === listId) : tasks;
 

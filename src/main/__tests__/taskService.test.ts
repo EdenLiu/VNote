@@ -439,7 +439,7 @@ describe('TaskService', () => {
   describe('addToMyDay', () => {
     it('adds a task to My Day for today', async () => {
       const task = service.createTask({ title: 'today task', listId: 'inbox' });
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date().toLocaleDateString('en-CA');
       const updated = service.addToMyDay(task.id);
       expect(updated.myDayDate).toBe(today);
     });
@@ -480,7 +480,7 @@ describe('TaskService', () => {
     });
 
     it('scores due-today tasks with high priority', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date().toLocaleDateString('en-CA');
       service.createTask({ title: 'due today', listId: 'inbox', dueDate: today });
       service.createTask({ title: 'no due date', listId: 'inbox' });
       const suggestions = service.getSuggestions();

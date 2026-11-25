@@ -16,6 +16,7 @@ import type {
 import { VNoteDatabase, type Row } from './database.js';
 import { isTaskUrgent, localDateKey } from '../shared/urgency.js';
 import type { AiSettingsPatch } from '../shared/ai.js';
+import { readRecommendations, recommendationPrompt } from './myDayRecommendations.js';
 import { draftWeeklyReport } from './aiWeeklyReport.js';
 import {
   readAiSettings,
@@ -26,7 +27,7 @@ import {
   type AiTaskScope,
 } from './ai.js';
 
-const todayKey = () => new Date().toISOString().slice(0, 10);
+const todayKey = () => localDateKey(new Date());
 const nowIso = () => new Date().toISOString();
 const newId = () => crypto.randomUUID();
 
@@ -58,6 +59,8 @@ const addRepeatPeriod = (value: string | undefined, repeat: RepeatFrequency) => 
 };
 
 export class TaskService {
+  private recommendationOffer?: { day: string; taskIds: Set<string> };
+
   constructor(
     private readonly db: VNoteDatabase,
     private readonly secrets?: AiSecretStore,
@@ -67,12 +70,50 @@ export class TaskService {
     return readAiSettings(this.db);
   }
 
-  getAiTasks(scope: AiTaskScope, day = new Date().toLocaleDateString('en-CA')) {
+  getAiTasks(scope: AiTaskScope, day = todayKey()) {
     return readAiTasks(this.db, scope, day);
   }
 
   requestAi(instructions: string, data: unknown) {
     return requestAiCompletion(this.db, this.secrets, instructions, data);
+  }
+
+  async getAiRecommendations() {
+    const today = todayKey();
+    const offer = { day: today, taskIds: new Set<string>() };
+    this.recommendationOffer = offer;
+    const candidates = this.getAiTasks('candidates', today);
+    if (candidates.length === 0) return [];
+    const content = await this.requestAi(recommendationPrompt, {
+      today,
+      candidates,
+      myDay: this.getAiTasks('my-day', today),
+    });
+    if (offer !== this.recommendationOffer || today !== todayKey())
+      throw new Error('Recommendations expired. Request recommendations again.');
+    const results = readRecommendations(
+      content,
+      candidates,
+      this.getAiTasks('candidates', today),
+      today,
+    );
+    for (const item of results) offer.taskIds.add(item.taskId);
+    return results;
+  }
+
+  acceptAiRecommendation(taskId: string): Task {
+    const today = todayKey();
+    const offer = this.recommendationOffer;
+    if (
+      offer?.day !== today ||
+      !offer.taskIds.has(taskId) ||
+      !this.getAiTasks('candidates', today).some((task) => task.id === taskId)
+    ) {
+      throw new Error('This recommendation is no longer available. Request recommendations again.');
+    }
+    const task = this.addToMyDay(taskId, today);
+    offer.taskIds.delete(taskId);
+    return task;
   }
 
   generateWeeklyReportDraft(): Promise<WeeklyReportGroup[]> {

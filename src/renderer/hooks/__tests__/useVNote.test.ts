@@ -55,6 +55,8 @@ describe('useVNote', () => {
       openAttachment: vi.fn(),
       setListSuggestions: vi.fn(),
       refreshSuggestions: vi.fn().mockResolvedValue([]),
+      getAiRecommendations: vi.fn(),
+      acceptAiRecommendation: vi.fn(),
       addToMyDay: vi.fn().mockResolvedValue(mockTask()),
       getWeeklyReport: vi.fn().mockResolvedValue([]),
       generateWeeklyReportDraft: vi.fn().mockResolvedValue([]),
