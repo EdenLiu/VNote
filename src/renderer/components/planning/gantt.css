@@ -56,10 +56,16 @@
   padding: 0;
 }
 .gantt-bar {
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
   top: 8px;
   height: 14px;
   border-radius: 5px;
   background: #377b91;
+}
+.gantt-bar:active {
+  cursor: grabbing;
 }
 .gantt-due {
   bottom: 6px;

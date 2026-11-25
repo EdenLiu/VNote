@@ -14,6 +14,7 @@ import type {
   WeeklyReportGroup,
 } from '../shared/types.js';
 import { VNoteDatabase, type Row } from './database.js';
+import { isTaskUrgent, localDateKey } from '../shared/urgency.js';
 import type { AiSettingsPatch } from '../shared/ai.js';
 import { draftWeeklyReport } from './aiWeeklyReport.js';
 import {
@@ -169,11 +170,12 @@ export class TaskService {
   }
 
   getTasks(): Task[] {
+    const day = localDateKey(new Date());
     return this.db
       .select(
         'SELECT t.*, md.day my_day_date FROM tasks t LEFT JOIN my_day md ON md.task_id = t.id ORDER BY t.created_at DESC',
       )
-      .map((row) => this.mapTask(row));
+      .map((row) => this.mapTask(row, day));
   }
 
   getTask(taskId: string): Task {
@@ -261,7 +263,7 @@ export class TaskService {
         `UPDATE tasks SET
           list_id = ?, title = ?, completed = ?, important = ?, notes = ?, due_date = ?, reminder_at = ?,
           repeat = ?, category_id = ?, updated_at = ?, completed_at = ?,
-          planned_start_date = ?, planned_end_date = ?
+          planned_start_date = ?, planned_end_date = ?, urgency_override = ?
          WHERE id = ?`,
         [
           next.listId,
@@ -281,6 +283,9 @@ export class TaskService {
           patch.plannedEndDate === undefined
             ? (current.plannedEndDate ?? null)
             : patch.plannedEndDate,
+          patch.urgencyOverride === undefined
+            ? (current.urgencyOverride ?? null)
+            : patch.urgencyOverride,
           taskId,
         ],
       );
@@ -298,6 +303,26 @@ export class TaskService {
         this.db.run('INSERT OR REPLACE INTO my_day VALUES (?, ?)', [taskId, patch.myDayDate]);
     }, completingRepeat);
 
+    return this.getTask(taskId);
+  }
+
+  moveTaskPlan(taskId: string, days: number): Task {
+    if (!Number.isSafeInteger(days)) throw new Error('Move the plan by a whole number of days.');
+    const modifier = `${days} days`;
+    const [shifted] = this.db.select(
+      `SELECT date(planned_start_date, ?) AS start, date(planned_end_date, ?) AS end
+       FROM tasks WHERE id = ? AND planned_start_date <= planned_end_date`,
+      [modifier, modifier, taskId],
+    );
+    if (!shifted?.start || !shifted.end || shifted.start < '0001-01-01') {
+      throw new Error('Choose a complete plan within the supported calendar range.');
+    }
+    this.db.transaction(() => {
+      this.db.run(
+        'UPDATE tasks SET planned_start_date = ?, planned_end_date = ?, updated_at = ? WHERE id = ?',
+        [shifted.start, shifted.end, nowIso(), taskId],
+      );
+    }, true);
     return this.getTask(taskId);
   }
 
@@ -482,16 +507,22 @@ export class TaskService {
     );
   }
 
-  private mapTask(row: Row): Task {
+  private mapTask(row: Row, day = localDateKey(new Date())): Task {
     const taskId = String(row.id);
+    const dueDate = row.due_date ? String(row.due_date) : undefined;
+    const override = row.urgency_override;
+    const urgencyOverride =
+      override === 'urgent' || override === 'not-urgent' ? override : undefined;
     return {
       id: taskId,
       listId: String(row.list_id),
       title: String(row.title),
       completed: Boolean(row.completed),
       important: Boolean(row.important),
+      urgencyOverride,
+      urgent: isTaskUrgent({ dueDate, urgencyOverride }, day),
       notes: String(row.notes ?? ''),
-      dueDate: row.due_date ? String(row.due_date) : undefined,
+      dueDate,
       plannedStartDate: row.planned_start_date ? String(row.planned_start_date) : undefined,
       plannedEndDate: row.planned_end_date ? String(row.planned_end_date) : undefined,
       reminderAt: row.reminder_at ? String(row.reminder_at) : undefined,
