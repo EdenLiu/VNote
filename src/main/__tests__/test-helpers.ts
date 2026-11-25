@@ -63,6 +63,11 @@ export async function createTestDb(): Promise<TestDb> {
       sort_order INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE recurring_completions (
+      task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      completed_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS task_tags (
       task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
       tag TEXT NOT NULL,
