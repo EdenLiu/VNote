@@ -20,8 +20,7 @@ const nowIso = () => new Date().toISOString();
 const newId = () => crypto.randomUUID();
 
 /** Local-time start of the current week (Monday 00:00:00.000). */
-const startOfWeek = () => {
-  const now = new Date();
+const startOfWeek = (now: Date) => {
   const day = now.getDay(); // 0 = Sunday
   const monday = new Date(
     now.getFullYear(),
@@ -184,6 +183,7 @@ export class TaskService {
     const completed = patch.completed ?? current.completed;
     const repeat = patch.repeat ?? current.repeat;
     const completingRepeat = !current.completed && completed && repeat !== 'none';
+    const timestamp = nowIso();
 
     // Repeating tasks stay active and jump to the next due/reminder time when checked off.
     const dueDate =
@@ -211,7 +211,7 @@ export class TaskService {
       completedAt: completingRepeat
         ? undefined
         : completed
-          ? (current.completedAt ?? nowIso())
+          ? (current.completedAt ?? timestamp)
           : undefined,
       tags:
         patch.tags ??
@@ -234,18 +234,24 @@ export class TaskService {
           next.reminderAt ?? null,
           next.repeat,
           next.categoryId ?? null,
-          nowIso(),
+          timestamp,
           next.completedAt ?? null,
           taskId,
         ],
       );
+      if (completingRepeat) {
+        this.db.run('INSERT INTO recurring_completions (task_id, completed_at) VALUES (?, ?)', [
+          taskId,
+          timestamp,
+        ]);
+      }
       this.db.run('DELETE FROM task_tags WHERE task_id = ?', [taskId]);
       for (const tag of next.tags)
         this.db.run('INSERT OR IGNORE INTO task_tags VALUES (?, ?)', [taskId, tag]);
       if (patch.myDayDate === null) this.db.run('DELETE FROM my_day WHERE task_id = ?', [taskId]);
       if (patch.myDayDate)
         this.db.run('INSERT OR REPLACE INTO my_day VALUES (?, ?)', [taskId, patch.myDayDate]);
-    });
+    }, completingRepeat);
 
     return this.getTask(taskId);
   }
@@ -374,25 +380,36 @@ export class TaskService {
    * in list-creation order; tasks within a group ordered by completion time.
    */
   getWeeklyReport(): WeeklyReportGroup[] {
-    const now = Date.now();
-    const weekStart = startOfWeek().getTime();
+    const now = new Date();
+    const window = [startOfWeek(now).toISOString(), now.toISOString()];
     const groups = new Map<string, WeeklyReportGroup>(
       this.getLists().map((list) => [list.id, { listId: list.id, listName: list.name, tasks: [] }]),
     );
 
-    for (const task of this.getTasks()) {
-      if (!task.completedAt) continue; // repeating tasks stay active — no completedAt
-      const completed = new Date(task.completedAt).getTime();
-      if (Number.isNaN(completed) || completed < weekStart || completed > now) continue;
-      groups.get(task.listId)?.tasks.push({ title: task.title, completedAt: task.completedAt });
+    const rows = this.db.select(
+      `WITH completions AS (
+         SELECT task_id, completed_at, 1 AS recurring FROM recurring_completions
+         WHERE completed_at BETWEEN ? AND ?
+         UNION ALL
+         SELECT id, completed_at, 0 FROM tasks
+         WHERE julianday(completed_at) BETWEEN julianday(?) AND julianday(?)
+       )
+       SELECT t.id, t.list_id, t.title, MAX(c.completed_at) AS completed_at,
+              COUNT(*) AS count, MAX(c.recurring) AS recurring
+       FROM completions c JOIN tasks t ON t.id = c.task_id
+       GROUP BY t.id ORDER BY completed_at ASC, t.id ASC`,
+      [...window, ...window],
+    );
+    for (const row of rows) {
+      groups.get(String(row.list_id))?.tasks.push({
+        taskId: String(row.id),
+        title: String(row.title),
+        completedAt: String(row.completed_at),
+        ...(row.recurring ? { completionCount: Number(row.count) } : {}),
+      });
     }
 
-    return [...groups.values()]
-      .map((group) => ({
-        ...group,
-        tasks: group.tasks.sort((a, b) => a.completedAt.localeCompare(b.completedAt)),
-      }))
-      .filter((group) => group.tasks.length > 0);
+    return [...groups.values()].filter((group) => group.tasks.length > 0);
   }
 
   private mapTask(row: Row): Task {

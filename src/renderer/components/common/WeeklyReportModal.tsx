@@ -5,9 +5,12 @@ import type { WeeklyReportGroup } from '@shared/types';
 /** Turn grouped report data into the copy-ready text format. */
 export function formatWeeklyReport(groups: WeeklyReportGroup[]): string {
   return groups
-    .map(
-      (group) => `${group.listName}:\n${group.tasks.map((task) => `- ${task.title}`).join('\n')}`,
-    )
+    .map((group) => {
+      const bullets = group.tasks.map(({ title, completionCount }) =>
+        completionCount ? `- ${title} ×${completionCount}` : `- ${title}`,
+      );
+      return [`${group.listName}:`, ...bullets].join('\n');
+    })
     .join('\n\n');
 }
 
