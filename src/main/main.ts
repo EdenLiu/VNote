@@ -38,6 +38,9 @@ function registerIpc() {
   ipcMain.handle('suggestions:refresh', () => service.getSuggestions());
   ipcMain.handle('myday:add', (_event, taskId, day) => service.addToMyDay(taskId, day));
   ipcMain.handle(ELECTRON_CHANNELS.reports.weekly, () => service.getWeeklyReport());
+  ipcMain.handle(ELECTRON_CHANNELS.reports.generateDraft, () =>
+    service.generateWeeklyReportDraft(),
+  );
 }
 
 async function createWindow() {

@@ -42,5 +42,6 @@ export const ELECTRON_CHANNELS = {
   reports: {
     /** Tasks completed this week, grouped by list. */
     weekly: 'report:weekly',
+    generateDraft: 'report:generate-draft',
   },
 } as const;

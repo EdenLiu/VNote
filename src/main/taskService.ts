@@ -16,6 +16,7 @@ import type {
 import { VNoteDatabase, type Row } from './database.js';
 import { isTaskUrgent, localDateKey } from '../shared/urgency.js';
 import type { AiSettingsPatch } from '../shared/ai.js';
+import { draftWeeklyReport } from './aiWeeklyReport.js';
 import {
   readAiSettings,
   readAiTasks,
@@ -72,6 +73,12 @@ export class TaskService {
 
   requestAi(instructions: string, data: unknown) {
     return requestAiCompletion(this.db, this.secrets, instructions, data);
+  }
+
+  generateWeeklyReportDraft(): Promise<WeeklyReportGroup[]> {
+    return draftWeeklyReport(this.getWeeklyReport(), this.getAiTasks('report'), (prompt, data) =>
+      this.requestAi(prompt, data),
+    );
   }
 
   saveAiSettings(patch: AiSettingsPatch) {

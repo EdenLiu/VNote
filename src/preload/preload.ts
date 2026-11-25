@@ -23,6 +23,7 @@ const api: VNoteApi = {
   refreshSuggestions: () => ipcRenderer.invoke('suggestions:refresh'),
   addToMyDay: (taskId, day) => ipcRenderer.invoke('myday:add', taskId, day),
   getWeeklyReport: () => ipcRenderer.invoke(ELECTRON_CHANNELS.reports.weekly),
+  generateWeeklyReportDraft: () => ipcRenderer.invoke(ELECTRON_CHANNELS.reports.generateDraft),
 };
 
 contextBridge.exposeInMainWorld('vnote', api);

@@ -170,6 +170,8 @@ export interface AttachmentResult {
 export interface WeeklyReportTask {
   taskId: string;
   title: string;
+  /** Optional phrasing for an AI draft. The title and completion facts stay local. */
+  wording?: string;
   /** Most recent included completion, in UTC. */
   completedAt: string;
   /** Present when the total includes recurring occurrences. */
@@ -179,6 +181,7 @@ export interface WeeklyReportTask {
 export interface WeeklyReportDueTask {
   taskId: string;
   title: string;
+  wording?: string;
   dueDate: string;
 }
 
@@ -240,6 +243,7 @@ export interface VNoteApi {
   addToMyDay(taskId: string, day?: string): Promise<Task>;
   /** Weekly completions and outstanding deadlines, grouped by list. */
   getWeeklyReport(): Promise<WeeklyReportGroup[]>;
+  generateWeeklyReportDraft(): Promise<WeeklyReportGroup[]>;
 }
 
 declare global {
