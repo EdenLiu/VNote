@@ -1,25 +1,46 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import type { WeeklyReportGroup } from '@shared/types';
+import type { WeeklyReportDueTask, WeeklyReportGroup } from '@shared/types';
+
+const deadlineEntry = ({ taskId, title, dueDate }: WeeklyReportDueTask) => ({
+  taskId,
+  label: `${title} (${dueDate})`,
+});
+
+function reportSections(group: WeeklyReportGroup) {
+  return [
+    {
+      heading: 'Completed this week',
+      entries: group.tasks.map(({ taskId, title, completionCount }) => ({
+        taskId,
+        label: completionCount ? `${title} ×${completionCount}` : title,
+      })),
+    },
+    { heading: 'Due in the next 3 days', entries: group.dueSoon.map(deadlineEntry) },
+    { heading: 'Overdue', entries: group.overdue.map(deadlineEntry) },
+  ].filter((section) => section.entries.length > 0);
+}
 
 /** Turn grouped report data into the copy-ready text format. */
 export function formatWeeklyReport(groups: WeeklyReportGroup[]): string {
   return groups
     .map((group) => {
-      const bullets = group.tasks.map(({ title, completionCount }) =>
-        completionCount ? `- ${title} ×${completionCount}` : `- ${title}`,
-      );
-      return [`${group.listName}:`, ...bullets].join('\n');
+      const lines = [`${group.listName}:`];
+      for (const { heading, entries } of reportSections(group)) {
+        lines.push(heading, ...entries.map(({ label }) => `- ${label}`));
+      }
+      return lines.join('\n');
     })
     .join('\n\n');
 }
 
 interface WeeklyReportModalProps {
   onClose: () => void;
+  onOpenTask: (taskId: string) => void;
   fetchReport: () => Promise<WeeklyReportGroup[] | undefined>;
 }
 
-export function WeeklyReportModal({ onClose, fetchReport }: WeeklyReportModalProps) {
+export function WeeklyReportModal({ onClose, onOpenTask, fetchReport }: WeeklyReportModalProps) {
   const [groups, setGroups] = useState<WeeklyReportGroup[] | undefined>();
   const [failed, setFailed] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -76,9 +97,27 @@ export function WeeklyReportModal({ onClose, fetchReport }: WeeklyReportModalPro
           ) : failed ? (
             <p className="modal-message">Could not load the weekly report.</p>
           ) : groups.length === 0 ? (
-            <p className="modal-message">No tasks completed this week.</p>
+            <p className="modal-message">No tasks to report this week.</p>
           ) : (
-            <pre className="report-text">{formatWeeklyReport(groups)}</pre>
+            groups.map((group) => (
+              <section key={group.listId} className="report-project" aria-label={group.listName}>
+                <h3>{group.listName}</h3>
+                {reportSections(group).map(({ heading, entries }) => (
+                  <div key={heading}>
+                    <h4>{heading}</h4>
+                    <ul>
+                      {entries.map(({ taskId, label }) => (
+                        <li key={taskId}>
+                          <button className="report-source" onClick={() => onOpenTask(taskId)}>
+                            {label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </section>
+            ))
           )}
         </div>
         {groups && groups.length > 0 && !failed ? (

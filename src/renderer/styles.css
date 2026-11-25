@@ -378,16 +378,46 @@ button {
   margin: 8px 0;
 }
 
-.report-text {
-  white-space: pre-wrap;
-  margin: 0;
+.report-project {
   padding: 12px 14px;
   background: #f8fafc;
   border: 1px solid #dbe4ee;
   border-radius: 8px;
-  font-family: inherit;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.report-project + .report-project {
+  margin-top: 10px;
+}
+
+.report-project h3,
+.report-project ul {
+  margin: 0;
+}
+
+.report-project h4 {
+  margin: 8px 0 2px;
+  color: #475569;
+}
+
+.report-project ul {
+  padding-left: 20px;
+}
+
+.report-source {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: #2453a3;
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.report-source:is(:hover, :focus-visible) {
+  text-decoration: underline;
 }
 
 .modal-footer {

@@ -48,6 +48,8 @@ it('shows the next occurrence after checking a task and its completion total in 
       {
         listId: 'inbox',
         listName: 'Tasks',
+        dueSoon: [],
+        overdue: [],
         tasks: [
           {
             taskId: task.id,
@@ -68,9 +70,9 @@ it('shows the next occurrence after checking a task and its completion total in 
     expect(await screen.findByText('2026-11-26')).toBeVisible();
     expect(within(row).getByRole('checkbox')).not.toBeChecked();
     await user.click(screen.getByRole('button', { name: 'Weekly Report' }));
-    expect(
-      await within(screen.getByRole('dialog')).findByText(/Tasks:.*Inspection ×3/s),
-    ).toBeVisible();
+    const report = within(screen.getByRole('dialog'));
+    expect(await report.findByRole('heading', { name: 'Tasks' })).toBeVisible();
+    expect(report.getByRole('button', { name: 'Inspection ×3' })).toBeVisible();
   } finally {
     vi.unstubAllGlobals();
   }
