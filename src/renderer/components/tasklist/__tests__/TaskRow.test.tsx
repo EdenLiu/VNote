@@ -10,6 +10,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     title: 'Test Task',
     completed: false,
     important: false,
+    urgent: false,
     notes: '',
     repeat: 'none',
     source: 'manual',

@@ -90,4 +90,9 @@ export function migrate(db: Database) {
   for (const column of ['planned_start_date', 'planned_end_date']) {
     if (!names.has(column)) db.run(`ALTER TABLE tasks ADD COLUMN ${column} TEXT`);
   }
+  if (!names.has('urgency_override')) {
+    db.run(
+      "ALTER TABLE tasks ADD COLUMN urgency_override TEXT CHECK (urgency_override IN ('urgent', 'not-urgent'))",
+    );
+  }
 }

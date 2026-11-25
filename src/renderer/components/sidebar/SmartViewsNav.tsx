@@ -6,6 +6,7 @@ const VIEW_LABELS: Record<string, string> = {
   suggestions: 'Suggestions',
   planned: 'Planned',
   important: 'Important',
+  quadrants: 'Priority quadrants',
   completed: 'Completed',
 };
 

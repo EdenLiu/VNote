@@ -17,6 +17,7 @@ it('copies all three report sections and opens the selected same-name task from 
     repeat: 'none',
     source: 'manual',
     important: false,
+    urgent: true,
     completed: false,
     steps: [],
     attachments: [],
