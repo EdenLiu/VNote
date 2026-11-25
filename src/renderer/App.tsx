@@ -285,6 +285,14 @@ export function App() {
       {weeklyReportOpen ? (
         <WeeklyReportModal
           onClose={() => setWeeklyReportOpen(false)}
+          onOpenTask={(taskId) => {
+            const task = tasks.find((item) => item.id === taskId);
+            if (task) {
+              setActiveView(`list:${task.listId}`);
+              setSelectedTaskId(task.id);
+              setWeeklyReportOpen(false);
+            }
+          }}
           fetchReport={getWeeklyReport}
         />
       ) : null}

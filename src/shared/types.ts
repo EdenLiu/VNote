@@ -167,12 +167,22 @@ export interface WeeklyReportTask {
   completionCount?: number;
 }
 
-/** Tasks completed this week, grouped by their task list ("project"). */
+export interface WeeklyReportDueTask {
+  taskId: string;
+  title: string;
+  dueDate: string;
+}
+
+/** Local report facts for one task list ("project"). */
 export interface WeeklyReportGroup {
   listId: string;
   listName: string;
   /** Ordered by completion time (oldest first). */
   tasks: WeeklyReportTask[];
+  /** Incomplete tasks due today or on either of the next two local dates. */
+  dueSoon: WeeklyReportDueTask[];
+  /** Incomplete tasks due before today. */
+  overdue: WeeklyReportDueTask[];
 }
 
 /**
@@ -217,7 +227,7 @@ export interface VNoteApi {
   refreshSuggestions(): Promise<Task[]>;
   /** Add a task to My Day for the given date (defaults to today). */
   addToMyDay(taskId: string, day?: string): Promise<Task>;
-  /** Tasks completed this week, grouped by list, for the weekly report. */
+  /** Weekly completions and outstanding deadlines, grouped by list. */
   getWeeklyReport(): Promise<WeeklyReportGroup[]>;
 }
 

@@ -414,14 +414,16 @@ export class TaskService {
   }
 
   /**
-   * Tasks completed this week (Monday 00:00 local → now), grouped by list
-   * in list-creation order; tasks within a group ordered by completion time.
+   * This week's completions and outstanding deadlines, in list-creation order.
    */
   getWeeklyReport(): WeeklyReportGroup[] {
     const now = new Date();
     const window = [startOfWeek(now).toISOString(), now.toISOString()];
     const groups = new Map<string, WeeklyReportGroup>(
-      this.getLists().map((list) => [list.id, { listId: list.id, listName: list.name, tasks: [] }]),
+      this.getLists().map((list) => [
+        list.id,
+        { listId: list.id, listName: list.name, tasks: [], dueSoon: [], overdue: [] },
+      ]),
     );
 
     const rows = this.db.select(
@@ -447,7 +449,30 @@ export class TaskService {
       });
     }
 
-    return [...groups.values()].filter((group) => group.tasks.length > 0);
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-');
+    const deadlines = this.db.select(
+      `SELECT id, list_id, title, due_date FROM tasks
+       WHERE completed = 0 AND due_date <> '' AND due_date <= date(?, '+2 days')
+       ORDER BY due_date, title, id`,
+      [today],
+    );
+    for (const row of deadlines) {
+      const dueDate = String(row.due_date);
+      const group = groups.get(String(row.list_id));
+      group?.[dueDate < today ? 'overdue' : 'dueSoon'].push({
+        taskId: String(row.id),
+        title: String(row.title),
+        dueDate,
+      });
+    }
+
+    return [...groups.values()].filter(
+      (group) => group.tasks.length || group.dueSoon.length || group.overdue.length,
+    );
   }
 
   private mapTask(row: Row): Task {
