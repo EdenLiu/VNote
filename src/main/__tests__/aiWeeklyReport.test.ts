@@ -41,6 +41,8 @@ it('drafts only reportable facts from authorized lists and keeps local counts, d
     title: 'Send invoice',
     listId: 'work',
     dueDate: '2026-11-27',
+    plannedStartDate: '2026-11-25',
+    plannedEndDate: '2026-11-26',
   });
   const late = service.createTask({
     title: 'Review wiring',
@@ -94,11 +96,34 @@ it('drafts only reportable facts from authorized lists and keeps local counts, d
     },
   ]);
   const sent = () => JSON.parse(fetch.mock.lastCall![1].body).messages[1].content as string;
+  expect(
+    JSON.parse(sent()).projects[0].items.find(
+      (item: { taskId: string }) => item.taskId === finalDay.id,
+    ),
+  ).toEqual({
+    section: 'dueSoon',
+    taskId: finalDay.id,
+    title: 'Send invoice',
+    dueDate: '2026-11-27',
+    plannedStartDate: '2026-11-25',
+    plannedEndDate: '2026-11-26',
+  });
   expect(sent()).toContain('Review wiring');
   expect(sent()).toContain('"completionCount":3');
   expect(sent()).not.toMatch(/Private appointment|Later work|Floor four|private.png|C:\/secret/);
   service.saveAiSettings({ includeNotes: true });
+  // A local report can gain display-only fields. The cloud request still uses its own contract.
+  const local = service.getWeeklyReport();
+  const work = local.find((group) => group.listId === 'work')!;
+  work.dueSoon[0].wording = 'Local-only annotation';
+  work.dueSoon.push({
+    taskId: privateTask.id,
+    title: 'Wrong project entry',
+    dueDate: '2026-11-25',
+  });
+  vi.spyOn(service, 'getWeeklyReport').mockReturnValue(local);
   await service.generateWeeklyReportDraft();
   expect(sent()).toContain('Floor four');
+  expect(sent()).not.toMatch(/Local-only annotation|Wrong project entry/);
   expect(sent()).not.toMatch(/Private appointment|Later work|private.png|C:\/secret/);
 });

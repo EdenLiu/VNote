@@ -15,7 +15,8 @@ import type {
 } from '../shared/types.js';
 import { VNoteDatabase, type Row } from './database.js';
 import { isTaskUrgent, localDateKey } from '../shared/urgency.js';
-import type { AiSettingsPatch } from '../shared/ai.js';
+import type { AiSettingsPatch, MyDayRecommendation } from '../shared/ai.js';
+import { supportsRecommendation } from '../shared/recommendations.js';
 import { readRecommendations, recommendationPrompt } from './myDayRecommendations.js';
 import { draftWeeklyReport } from './aiWeeklyReport.js';
 import {
@@ -50,16 +51,25 @@ const extractTags = (text: string) =>
 
 const addRepeatPeriod = (value: string | undefined, repeat: RepeatFrequency) => {
   if (!value || repeat === 'none') return value;
-  const date = new Date(value);
+  const isCalendarDate = value.length === 10;
+  const date = new Date(isCalendarDate ? `${value}T12:00` : value);
   if (Number.isNaN(date.getTime())) return value;
   if (repeat === 'daily') date.setDate(date.getDate() + 1);
   if (repeat === 'weekly') date.setDate(date.getDate() + 7);
-  if (repeat === 'monthly') date.setMonth(date.getMonth() + 1);
-  return value.length <= 10 ? date.toISOString().slice(0, 10) : date.toISOString().slice(0, 16);
+  if (repeat === 'monthly') {
+    const day = date.getDate();
+    date.setMonth(date.getMonth() + 2, 0); // Last day of the next month.
+    date.setDate(Math.min(day, date.getDate()));
+  }
+  const day = localDateKey(date).padStart(10, '0');
+  if (isCalendarDate) return day;
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${day}T${hours}:${minutes}`;
 };
 
 export class TaskService {
-  private recommendationOffer?: { day: string; taskIds: Set<string> };
+  private recommendationOffer?: { day: string; items: Map<string, MyDayRecommendation> };
 
   constructor(
     private readonly db: VNoteDatabase,
@@ -80,7 +90,7 @@ export class TaskService {
 
   async getAiRecommendations() {
     const today = todayKey();
-    const offer = { day: today, taskIds: new Set<string>() };
+    const offer = { day: today, items: new Map<string, MyDayRecommendation>() };
     this.recommendationOffer = offer;
     const candidates = this.getAiTasks('candidates', today);
     if (candidates.length === 0) return [];
@@ -97,22 +107,25 @@ export class TaskService {
       this.getAiTasks('candidates', today),
       today,
     );
-    for (const item of results) offer.taskIds.add(item.taskId);
+    for (const item of results) offer.items.set(item.taskId, item);
     return results;
   }
 
   acceptAiRecommendation(taskId: string): Task {
     const today = todayKey();
     const offer = this.recommendationOffer;
+    const item = offer?.items.get(taskId);
+    const candidate = this.getAiTasks('candidates', today).find((task) => task.id === taskId);
     if (
       offer?.day !== today ||
-      !offer.taskIds.has(taskId) ||
-      !this.getAiTasks('candidates', today).some((task) => task.id === taskId)
+      !item ||
+      !candidate ||
+      !supportsRecommendation(item, candidate, candidate.listName, today)
     ) {
       throw new Error('This recommendation is no longer available. Request recommendations again.');
     }
     const task = this.addToMyDay(taskId, today);
-    offer.taskIds.delete(taskId);
+    offer.items.delete(taskId);
     return task;
   }
 
@@ -266,18 +279,10 @@ export class TaskService {
     const completingRepeat = !current.completed && completed && repeat !== 'none';
     const timestamp = nowIso();
 
-    // Repeating tasks stay active and jump to the next due/reminder time when checked off.
-    const dueDate =
-      patch.dueDate === null
-        ? undefined
-        : addRepeatPeriod(patch.dueDate ?? current.dueDate, completingRepeat ? repeat : 'none');
-    const reminderAt =
-      patch.reminderAt === null
-        ? undefined
-        : addRepeatPeriod(
-            patch.reminderAt ?? current.reminderAt,
-            completingRepeat ? repeat : 'none',
-          );
+    const nextDate = (field: 'dueDate' | 'reminderAt' | 'plannedStartDate' | 'plannedEndDate') => {
+      const value = patch[field] === undefined ? current[field] : patch[field];
+      return addRepeatPeriod(value ?? undefined, completingRepeat ? repeat : 'none');
+    };
 
     const next = {
       title: patch.title ?? current.title,
@@ -285,8 +290,10 @@ export class TaskService {
       completed: completingRepeat ? false : completed,
       important: patch.important ?? current.important,
       notes: patch.notes ?? current.notes,
-      dueDate,
-      reminderAt,
+      dueDate: nextDate('dueDate'),
+      reminderAt: nextDate('reminderAt'),
+      plannedStartDate: nextDate('plannedStartDate'),
+      plannedEndDate: nextDate('plannedEndDate'),
       repeat,
       categoryId: patch.categoryId === null ? undefined : (patch.categoryId ?? current.categoryId),
       completedAt: completingRepeat
@@ -318,12 +325,8 @@ export class TaskService {
           next.categoryId ?? null,
           timestamp,
           next.completedAt ?? null,
-          patch.plannedStartDate === undefined
-            ? (current.plannedStartDate ?? null)
-            : patch.plannedStartDate,
-          patch.plannedEndDate === undefined
-            ? (current.plannedEndDate ?? null)
-            : patch.plannedEndDate,
+          next.plannedStartDate ?? null,
+          next.plannedEndDate ?? null,
           patch.urgencyOverride === undefined
             ? (current.urgencyOverride ?? null)
             : patch.urgencyOverride,

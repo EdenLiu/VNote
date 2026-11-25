@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import type { MyDayRecommendation } from '@shared/ai';
+import { supportsRecommendation } from '@shared/recommendations';
 import type { Task, TaskList } from '@shared/types';
-import './suggestions.css';
 
 interface Props {
   tasks: Task[];
@@ -40,10 +40,16 @@ export function SuggestionsView({ tasks, lists, today, onOpen, onAccept, childre
     }
   }
 
-  const cards = results?.flatMap(({ taskId, reason }) => {
-    const task = tasks.find((item) => item.id === taskId);
+  const cards = results?.flatMap((recommendation) => {
+    const task = tasks.find((item) => item.id === recommendation.taskId);
     const list = lists.find((item) => item.id === task?.listId);
-    if (!task || task.completed || task.myDayDate === today || !list?.includeInSuggestions)
+    if (
+      !task ||
+      task.completed ||
+      task.myDayDate === today ||
+      !list?.includeInSuggestions ||
+      !supportsRecommendation(recommendation, task, list.name, today)
+    )
       return [];
     return (
       <li key={task.id}>
@@ -51,7 +57,7 @@ export function SuggestionsView({ tasks, lists, today, onOpen, onAccept, childre
           <button className="suggestion-title" onClick={() => onOpen(task)}>
             {task.title}
           </button>
-          <p>{reason}</p>
+          <p>{recommendation.reason}</p>
         </div>
         <button className="secondary-button" disabled={busy} onClick={() => void accept(task.id)}>
           Add to My Day

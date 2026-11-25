@@ -1,5 +1,6 @@
-import type { MyDayRecommendation } from '../shared/ai.js';
-import type { AiTask } from './ai.js';
+import type { MyDayRecommendation, RecommendationEvidence } from '../shared/ai.js';
+import { recommendationReason, supportsRecommendation } from '../shared/recommendations.js';
+import { parseAiJson, type AiTask } from './ai.js';
 
 export const recommendationPrompt = [
   'Select zero to three candidates worth adding to My Day today. Consider the existing myDay workload.',
@@ -8,24 +9,17 @@ export const recommendationPrompt = [
   'For title or notes include "quote" with a short exact passage that explains why today. Omit weak choices.',
 ].join(' ');
 
-function reasonFor(task: AiTask, basis: unknown, quote: unknown, today: string) {
+function readEvidence(basis: unknown, quote: unknown): RecommendationEvidence | undefined {
   switch (basis) {
     case 'dueDate':
-      if (!task.dueDate) return;
-      if (task.dueDate === today) return `Due today (${today}).`;
-      if (task.dueDate < today) return `Overdue since ${task.dueDate}.`;
-      return `Due on ${task.dueDate}.`;
     case 'plannedStartDate':
-      return task.plannedStartDate && `Planned to start on ${task.plannedStartDate}.`;
     case 'plannedEndDate':
-      return task.plannedEndDate && `Planned to finish on ${task.plannedEndDate}.`;
     case 'important':
-      return task.important && `Starred as important in ${task.listName}.`;
+      return { basis };
     case 'title':
     case 'notes': {
       const excerpt = typeof quote === 'string' && quote.trim();
-      if (excerpt && excerpt.length <= 240 && task[basis]?.includes(excerpt))
-        return `Task ${basis === 'notes' ? 'notes' : 'title'}: “${excerpt}”`;
+      if (excerpt && excerpt.length <= 240) return { basis, quote: excerpt };
     }
   }
 }
@@ -38,7 +32,7 @@ export function readRecommendations(
 ): MyDayRecommendation[] {
   let choices: unknown;
   try {
-    choices = JSON.parse(content)?.recommendations;
+    choices = parseAiJson(content)?.recommendations;
   } catch {
     // Some services return prose even when asked for JSON.
   }
@@ -50,9 +44,13 @@ export function readRecommendations(
     const task = eligible.get(choice?.taskId);
     const sent = original.get(choice?.taskId);
     if (!task || !sent) continue;
-    const reason = reasonFor(task, choice.basis, choice.quote, today);
-    if (!reason || reason !== reasonFor(sent, choice.basis, choice.quote, today)) continue;
-    result.push({ taskId: task.id, reason });
+    const evidence = readEvidence(choice.basis, choice.quote);
+    if (!evidence) continue;
+    const reason = recommendationReason(sent, sent.listName, evidence, today);
+    if (!reason) continue;
+    const item = { taskId: sent.id, listId: sent.listId, reason, evidence };
+    if (!supportsRecommendation(item, task, task.listName, today)) continue;
+    result.push(item);
     eligible.delete(task.id);
     if (result.length === 3) break;
   }

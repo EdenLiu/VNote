@@ -72,7 +72,25 @@ async function createWindow() {
   }
 }
 
-app.whenReady().then(async () => {
+function showPrimaryWindow() {
+  const window = BrowserWindow.getAllWindows()[0];
+  if (window) {
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+  } else if (service) {
+    void createWindow();
+  }
+}
+
+async function startPrimaryInstance() {
+  app.on('second-instance', showPrimaryWindow);
+  app.on('activate', showPrimaryWindow);
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
+  });
+  app.on('will-quit', () => reminders?.stop());
+  await app.whenReady();
   service = new TaskService(await VNoteDatabase.open(), {
     encryptString(value) {
       if (
@@ -89,13 +107,10 @@ app.whenReady().then(async () => {
   reminders = new ReminderScheduler(service);
   reminders.start();
   await createWindow();
-});
+}
 
-app.on('window-all-closed', () => {
-  reminders?.stop();
-  if (process.platform !== 'darwin') app.quit();
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) void createWindow();
-});
+if (app.requestSingleInstanceLock()) {
+  void startPrimaryInstance();
+} else {
+  app.quit();
+}
