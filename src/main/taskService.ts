@@ -158,8 +158,9 @@ export class TaskService {
     this.db.transaction(() => {
       this.db.run(
         `INSERT INTO tasks
-          (id, list_id, title, completed, important, notes, due_date, reminder_at, repeat, category_id, created_at, updated_at, completed_at, source)
-         VALUES (?, ?, ?, 0, ?, '', ?, ?, 'none', NULL, ?, ?, NULL, 'manual')`,
+          (id, list_id, title, completed, important, notes, due_date, reminder_at, repeat, category_id,
+           created_at, updated_at, completed_at, source, planned_start_date, planned_end_date)
+         VALUES (?, ?, ?, 0, ?, '', ?, ?, 'none', NULL, ?, ?, NULL, 'manual', ?, ?)`,
         [
           taskId,
           draft.listId,
@@ -169,6 +170,8 @@ export class TaskService {
           draft.reminderAt ?? null,
           timestamp,
           timestamp,
+          draft.plannedStartDate ?? null,
+          draft.plannedEndDate ?? null,
         ],
       );
       for (const tag of extractTags(title))
@@ -222,7 +225,8 @@ export class TaskService {
       this.db.run(
         `UPDATE tasks SET
           list_id = ?, title = ?, completed = ?, important = ?, notes = ?, due_date = ?, reminder_at = ?,
-          repeat = ?, category_id = ?, updated_at = ?, completed_at = ?
+          repeat = ?, category_id = ?, updated_at = ?, completed_at = ?,
+          planned_start_date = ?, planned_end_date = ?
          WHERE id = ?`,
         [
           next.listId,
@@ -236,6 +240,12 @@ export class TaskService {
           next.categoryId ?? null,
           timestamp,
           next.completedAt ?? null,
+          patch.plannedStartDate === undefined
+            ? (current.plannedStartDate ?? null)
+            : patch.plannedStartDate,
+          patch.plannedEndDate === undefined
+            ? (current.plannedEndDate ?? null)
+            : patch.plannedEndDate,
           taskId,
         ],
       );
@@ -447,6 +457,8 @@ export class TaskService {
       important: Boolean(row.important),
       notes: String(row.notes ?? ''),
       dueDate: row.due_date ? String(row.due_date) : undefined,
+      plannedStartDate: row.planned_start_date ? String(row.planned_start_date) : undefined,
+      plannedEndDate: row.planned_end_date ? String(row.planned_end_date) : undefined,
       reminderAt: row.reminder_at ? String(row.reminder_at) : undefined,
       repeat: String(row.repeat) as RepeatFrequency,
       categoryId: row.category_id ? String(row.category_id) : undefined,

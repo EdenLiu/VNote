@@ -1,16 +1,10 @@
-import type { Task, TaskList, Category, RepeatFrequency } from '@shared/types';
+import type { Task, TaskList, TaskPatch, Category, RepeatFrequency } from '@shared/types';
 
 interface Props {
   task: Task;
   lists: TaskList[];
   categories: Category[];
-  onChange: (patch: {
-    listId?: string;
-    dueDate?: string | null;
-    reminderAt?: string | null;
-    repeat?: RepeatFrequency;
-    categoryId?: string | null;
-  }) => void;
+  onChange: (patch: TaskPatch) => void;
 }
 
 /** Grid of dropdown/date inputs for list, due date, reminder, repeat, and category. */
@@ -28,6 +22,22 @@ export function DetailFields({ task, lists, categories, onChange }: Props) {
         </select>
       </label>
 
+      <label>
+        Plan start
+        <input
+          type="date"
+          value={task.plannedStartDate ?? ''}
+          onChange={(e) => onChange({ plannedStartDate: e.target.value || null })}
+        />
+      </label>
+      <label>
+        Plan end
+        <input
+          type="date"
+          value={task.plannedEndDate ?? ''}
+          onChange={(e) => onChange({ plannedEndDate: e.target.value || null })}
+        />
+      </label>
       <label>
         Due
         <input
