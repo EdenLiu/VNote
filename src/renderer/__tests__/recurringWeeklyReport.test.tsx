@@ -13,6 +13,7 @@ it('shows the next occurrence after checking a task and its completion total in 
     repeat: 'daily',
     completed: false,
     important: false,
+    urgent: false,
     notes: '',
     dueDate: '2026-11-25',
     createdAt: '2026-11-23',

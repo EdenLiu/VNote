@@ -8,6 +8,7 @@ import { SmartViewsNav } from './components/sidebar/SmartViewsNav';
 import { ListsSection } from './components/sidebar/ListsSection';
 import { TaskList } from './components/tasklist/TaskList';
 import { GanttView } from './components/planning/GanttView';
+import { QuadrantsView } from './components/planning/QuadrantsView';
 import { DetailPane } from './components/detail/DetailPane';
 import { DetailHeader } from './components/detail/DetailHeader';
 import { DetailTitle } from './components/detail/DetailTitle';
@@ -25,6 +26,7 @@ const VIEW_LABELS: Record<string, string> = {
   suggestions: 'Suggestions',
   planned: 'Planned',
   important: 'Important',
+  quadrants: 'Priority quadrants',
   completed: 'Completed',
 };
 
@@ -78,6 +80,8 @@ export function App() {
         return suggestions;
       case 'planned':
         return tasks.filter((t) => Boolean(t.dueDate));
+      case 'quadrants':
+        return tasks.filter((t) => !t.completed);
       case 'important':
         return tasks.filter((t) => t.important && !t.completed);
       case 'completed':
@@ -143,7 +147,9 @@ export function App() {
                 lists.find((l) => `list:${l.id}` === activeView)?.name ??
                 'List'}
             </div>
-            <div className="view-meta">{visibleTasks.length} tasks</div>
+            {activeView !== 'quadrants' && (
+              <div className="view-meta">{visibleTasks.length} tasks</div>
+            )}
           </div>
           <div className="toolbar-spacer" />
           {currentList && (
@@ -167,8 +173,17 @@ export function App() {
 
         {error ? <ErrorBanner message={error} onDismiss={() => setError(null)} /> : null}
 
-        <div className="content-grid">
-          {currentList && showGantt ? (
+        <div
+          className={activeView === 'quadrants' ? 'content-grid quadrant-layout' : 'content-grid'}
+        >
+          {activeView === 'quadrants' ? (
+            <QuadrantsView
+              tasks={visibleTasks}
+              lists={lists}
+              onSelectTask={handleSelectTask}
+              onUpdateTask={handleUpdateTask}
+            />
+          ) : currentList && showGantt ? (
             <GanttView
               tasks={visibleTasks}
               listName={currentList.name}
