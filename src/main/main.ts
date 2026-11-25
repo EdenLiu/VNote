@@ -33,6 +33,10 @@ function registerIpc() {
   ipcMain.handle('attachment:open', (_event, id) => openAttachment(service, id));
   ipcMain.handle('attachment:remove', (_event, id) => removeAttachment(service, id));
   ipcMain.handle('suggestions:refresh', () => service.getSuggestions());
+  ipcMain.handle(ELECTRON_CHANNELS.suggestions.recommend, () => service.getAiRecommendations());
+  ipcMain.handle(ELECTRON_CHANNELS.suggestions.accept, (_event, id) =>
+    service.acceptAiRecommendation(id),
+  );
   ipcMain.handle('myday:add', (_event, taskId, day) => service.addToMyDay(taskId, day));
   ipcMain.handle(ELECTRON_CHANNELS.reports.weekly, () => service.getWeeklyReport());
 }

@@ -1,0 +1,60 @@
+.suggestions-view {
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.suggestions-view section + section {
+  margin-top: 24px;
+}
+
+.suggestions-view header,
+.suggestions-view li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.suggestions-view h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.suggestions-view header h2 {
+  margin: 0;
+}
+
+.suggestions-view ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.suggestions-view li {
+  background: white;
+  border: 1px solid #dbe4ee;
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+
+.suggestions-view p {
+  font-size: 0.85rem;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+.suggestions-view li p {
+  margin: 4px 0 0;
+}
+
+.suggestion-title {
+  padding: 0;
+  background: none;
+  border: 0;
+  font-weight: 600;
+  color: #1d4ed8;
+  text-align: left;
+  overflow-wrap: anywhere;
+}

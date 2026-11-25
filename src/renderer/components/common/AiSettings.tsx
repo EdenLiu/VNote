@@ -3,19 +3,19 @@ import { Settings2, X } from 'lucide-react';
 import type { AiSettings, AiSettingsPatch } from '@shared/ai';
 import './AiSettings.css';
 
-export function AiSettingsButton() {
+export function AiSettingsButton({ onSaved }: { onSaved?: () => void }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button className="secondary-button" onClick={() => setOpen(true)}>
         <Settings2 size={16} /> AI settings
       </button>
-      {open && <SettingsDialog onClose={() => setOpen(false)} />}
+      {open && <SettingsDialog onClose={() => setOpen(false)} onSaved={onSaved} />}
     </>
   );
 }
 
-function SettingsDialog({ onClose }: { onClose: () => void }) {
+function SettingsDialog({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [settings, setSettings] = useState<AiSettings>();
   const [changes, setChanges] = useState<AiSettingsPatch>({});
@@ -46,6 +46,7 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
     setSaving(true);
     try {
       await window.vnote.saveAiSettings(changes);
+      onSaved?.();
       onClose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not save AI settings. Retry.');

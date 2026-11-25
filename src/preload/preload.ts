@@ -20,6 +20,8 @@ const api: VNoteApi = {
   openAttachment: (id) => ipcRenderer.invoke('attachment:open', id),
   setListSuggestions: (listId, enabled) => ipcRenderer.invoke('list:suggestions', listId, enabled),
   refreshSuggestions: () => ipcRenderer.invoke('suggestions:refresh'),
+  getAiRecommendations: () => ipcRenderer.invoke(ELECTRON_CHANNELS.suggestions.recommend),
+  acceptAiRecommendation: (id) => ipcRenderer.invoke(ELECTRON_CHANNELS.suggestions.accept, id),
   addToMyDay: (taskId, day) => ipcRenderer.invoke('myday:add', taskId, day),
   getWeeklyReport: () => ipcRenderer.invoke(ELECTRON_CHANNELS.reports.weekly),
 };

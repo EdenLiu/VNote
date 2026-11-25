@@ -1,4 +1,4 @@
-import type { AiSettings, AiSettingsPatch } from './ai.js';
+import type { AiSettings, AiSettingsPatch, MyDayRecommendation } from './ai.js';
 
 /** Priority level for a task — "important" is the starred/flagged state. */
 export type TaskPriority = 'normal' | 'important';
@@ -234,6 +234,8 @@ export interface VNoteApi {
   setListSuggestions(listId: string, enabled: boolean): Promise<TaskList>;
   /** Recompute and return the top suggestion candidates. */
   refreshSuggestions(): Promise<Task[]>;
+  getAiRecommendations(): Promise<MyDayRecommendation[]>;
+  acceptAiRecommendation(taskId: string): Promise<Task>;
   /** Add a task to My Day for the given date (defaults to today). */
   addToMyDay(taskId: string, day?: string): Promise<Task>;
   /** Weekly completions and outstanding deadlines, grouped by list. */

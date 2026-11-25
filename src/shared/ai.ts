@@ -4,6 +4,11 @@ export interface AiListAccess {
   allowAi: boolean;
 }
 
+export interface MyDayRecommendation {
+  taskId: string;
+  reason: string;
+}
+
 export interface AiSettings {
   baseUrl: string;
   model: string;
