@@ -1,3 +1,4 @@
+import { migrate } from './schema.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { app } from 'electron';
@@ -31,7 +32,7 @@ export class VNoteDatabase {
       : new sqlRuntime.Database();
 
     const store = new VNoteDatabase(db, dbPath);
-    store.migrate();
+    migrate(db);
     store.seedDefaults();
     store.flush();
     return store;
@@ -73,72 +74,6 @@ export class VNoteDatabase {
     if (this.saveTimer) clearTimeout(this.saveTimer);
     // sql.js is in-memory; debounce export so rapid UI edits do not rewrite the whole DB on every keystroke.
     this.saveTimer = setTimeout(() => this.flush(), 150);
-  }
-
-  private migrate() {
-    this.db.run(`
-      PRAGMA foreign_keys = ON;
-
-      CREATE TABLE IF NOT EXISTS lists (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        color TEXT NOT NULL,
-        include_in_suggestions INTEGER NOT NULL DEFAULT 1,
-        created_at TEXT NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS categories (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        color TEXT NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS tasks (
-        id TEXT PRIMARY KEY,
-        list_id TEXT NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
-        title TEXT NOT NULL,
-        completed INTEGER NOT NULL DEFAULT 0,
-        important INTEGER NOT NULL DEFAULT 0,
-        notes TEXT NOT NULL DEFAULT '',
-        due_date TEXT,
-        reminder_at TEXT,
-        repeat TEXT NOT NULL DEFAULT 'none',
-        category_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        completed_at TEXT,
-        source TEXT NOT NULL DEFAULT 'manual'
-      );
-
-      CREATE TABLE IF NOT EXISTS steps (
-        id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-        title TEXT NOT NULL,
-        completed INTEGER NOT NULL DEFAULT 0,
-        sort_order INTEGER NOT NULL DEFAULT 0
-      );
-
-      CREATE TABLE IF NOT EXISTS task_tags (
-        task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-        tag TEXT NOT NULL,
-        PRIMARY KEY (task_id, tag)
-      );
-
-      CREATE TABLE IF NOT EXISTS attachments (
-        id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        size INTEGER NOT NULL,
-        stored_path TEXT NOT NULL,
-        mime_type TEXT,
-        created_at TEXT NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS my_day (
-        task_id TEXT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
-        day TEXT NOT NULL
-      );
-    `);
   }
 
   private seedDefaults() {
