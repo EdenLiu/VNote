@@ -1,9 +1,13 @@
-const todayKey = () => new Date().toISOString().slice(0, 10);
+import { isTaskUrgent, localDateKey } from '../shared/urgency.js';
+import { supportsRecommendation } from '../shared/recommendations.js';
+import { readRecommendations, recommendationPrompt } from './myDayRecommendations.js';
+import { draftWeeklyReport } from './aiWeeklyReport.js';
+import { readAiSettings, readAiTasks, requestAiCompletion, writeAiSettings, } from './ai.js';
+const todayKey = () => localDateKey(new Date());
 const nowIso = () => new Date().toISOString();
 const newId = () => crypto.randomUUID();
 /** Local-time start of the current week (Monday 00:00:00.000). */
-const startOfWeek = () => {
-    const now = new Date();
+const startOfWeek = (now) => {
     const day = now.getDay(); // 0 = Sunday
     const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (day === 0 ? 6 : day - 1));
     monday.setHours(0, 0, 0, 0);
@@ -13,21 +17,82 @@ const extractTags = (text) => Array.from(new Set((text.match(/#[\p{L}\p{N}_-]+/g
 const addRepeatPeriod = (value, repeat) => {
     if (!value || repeat === 'none')
         return value;
-    const date = new Date(value);
+    const isCalendarDate = value.length === 10;
+    const date = new Date(isCalendarDate ? `${value}T12:00` : value);
     if (Number.isNaN(date.getTime()))
         return value;
     if (repeat === 'daily')
         date.setDate(date.getDate() + 1);
     if (repeat === 'weekly')
         date.setDate(date.getDate() + 7);
-    if (repeat === 'monthly')
-        date.setMonth(date.getMonth() + 1);
-    return value.length <= 10 ? date.toISOString().slice(0, 10) : date.toISOString().slice(0, 16);
+    if (repeat === 'monthly') {
+        const day = date.getDate();
+        date.setMonth(date.getMonth() + 2, 0); // Last day of the next month.
+        date.setDate(Math.min(day, date.getDate()));
+    }
+    const day = localDateKey(date).padStart(10, '0');
+    if (isCalendarDate)
+        return day;
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}T${hours}:${minutes}`;
 };
 export class TaskService {
     db;
-    constructor(db) {
+    secrets;
+    recommendationOffer;
+    constructor(db, secrets) {
         this.db = db;
+        this.secrets = secrets;
+    }
+    getAiSettings() {
+        return readAiSettings(this.db);
+    }
+    getAiTasks(scope, day = todayKey()) {
+        return readAiTasks(this.db, scope, day);
+    }
+    requestAi(instructions, data) {
+        return requestAiCompletion(this.db, this.secrets, instructions, data);
+    }
+    async getAiRecommendations() {
+        const today = todayKey();
+        const offer = { day: today, items: new Map() };
+        this.recommendationOffer = offer;
+        const candidates = this.getAiTasks('candidates', today);
+        if (candidates.length === 0)
+            return [];
+        const content = await this.requestAi(recommendationPrompt, {
+            today,
+            candidates,
+            myDay: this.getAiTasks('my-day', today),
+        });
+        if (offer !== this.recommendationOffer || today !== todayKey())
+            throw new Error('Recommendations expired. Request recommendations again.');
+        const results = readRecommendations(content, candidates, this.getAiTasks('candidates', today), today);
+        for (const item of results)
+            offer.items.set(item.taskId, item);
+        return results;
+    }
+    acceptAiRecommendation(taskId) {
+        const today = todayKey();
+        const offer = this.recommendationOffer;
+        const item = offer?.items.get(taskId);
+        const candidate = this.getAiTasks('candidates', today).find((task) => task.id === taskId);
+        if (offer?.day !== today ||
+            !item ||
+            !candidate ||
+            !supportsRecommendation(item, candidate, candidate.listName, today)) {
+            throw new Error('This recommendation is no longer available. Request recommendations again.');
+        }
+        const task = this.addToMyDay(taskId, today);
+        offer.items.delete(taskId);
+        return task;
+    }
+    generateWeeklyReportDraft() {
+        return draftWeeklyReport(this.getWeeklyReport(), this.getAiTasks('report'), (prompt, data) => this.requestAi(prompt, data));
+    }
+    saveAiSettings(patch) {
+        return writeAiSettings(this.db, patch, this.secrets);
     }
     getState() {
         return {
@@ -111,9 +176,10 @@ export class TaskService {
         }));
     }
     getTasks() {
+        const day = localDateKey(new Date());
         return this.db
             .select('SELECT t.*, md.day my_day_date FROM tasks t LEFT JOIN my_day md ON md.task_id = t.id ORDER BY t.created_at DESC')
-            .map((row) => this.mapTask(row));
+            .map((row) => this.mapTask(row, day));
     }
     getTask(taskId) {
         const row = this.db.select('SELECT t.*, md.day my_day_date FROM tasks t LEFT JOIN my_day md ON md.task_id = t.id WHERE t.id = ?', [taskId])[0];
@@ -127,8 +193,9 @@ export class TaskService {
         const title = draft.title.trim() || 'Untitled task';
         this.db.transaction(() => {
             this.db.run(`INSERT INTO tasks
-          (id, list_id, title, completed, important, notes, due_date, reminder_at, repeat, category_id, created_at, updated_at, completed_at, source)
-         VALUES (?, ?, ?, 0, ?, '', ?, ?, 'none', NULL, ?, ?, NULL, 'manual')`, [
+          (id, list_id, title, completed, important, notes, due_date, reminder_at, repeat, category_id,
+           created_at, updated_at, completed_at, source, planned_start_date, planned_end_date)
+         VALUES (?, ?, ?, 0, ?, '', ?, ?, 'none', NULL, ?, ?, NULL, 'manual', ?, ?)`, [
                 taskId,
                 draft.listId,
                 title,
@@ -137,6 +204,8 @@ export class TaskService {
                 draft.reminderAt ?? null,
                 timestamp,
                 timestamp,
+                draft.plannedStartDate ?? null,
+                draft.plannedEndDate ?? null,
             ]);
             for (const tag of extractTags(title))
                 this.db.run('INSERT OR IGNORE INTO task_tags VALUES (?, ?)', [taskId, tag]);
@@ -148,27 +217,27 @@ export class TaskService {
         const completed = patch.completed ?? current.completed;
         const repeat = patch.repeat ?? current.repeat;
         const completingRepeat = !current.completed && completed && repeat !== 'none';
-        // Repeating tasks stay active and jump to the next due/reminder time when checked off.
-        const dueDate = patch.dueDate === null
-            ? undefined
-            : addRepeatPeriod(patch.dueDate ?? current.dueDate, completingRepeat ? repeat : 'none');
-        const reminderAt = patch.reminderAt === null
-            ? undefined
-            : addRepeatPeriod(patch.reminderAt ?? current.reminderAt, completingRepeat ? repeat : 'none');
+        const timestamp = nowIso();
+        const nextDate = (field) => {
+            const value = patch[field] === undefined ? current[field] : patch[field];
+            return addRepeatPeriod(value ?? undefined, completingRepeat ? repeat : 'none');
+        };
         const next = {
             title: patch.title ?? current.title,
             listId: patch.listId ?? current.listId,
             completed: completingRepeat ? false : completed,
             important: patch.important ?? current.important,
             notes: patch.notes ?? current.notes,
-            dueDate,
-            reminderAt,
+            dueDate: nextDate('dueDate'),
+            reminderAt: nextDate('reminderAt'),
+            plannedStartDate: nextDate('plannedStartDate'),
+            plannedEndDate: nextDate('plannedEndDate'),
             repeat,
             categoryId: patch.categoryId === null ? undefined : (patch.categoryId ?? current.categoryId),
             completedAt: completingRepeat
                 ? undefined
                 : completed
-                    ? (current.completedAt ?? nowIso())
+                    ? (current.completedAt ?? timestamp)
                     : undefined,
             tags: patch.tags ??
                 extractTags(`${patch.title ?? current.title} ${patch.notes ?? current.notes}`),
@@ -176,7 +245,8 @@ export class TaskService {
         this.db.transaction(() => {
             this.db.run(`UPDATE tasks SET
           list_id = ?, title = ?, completed = ?, important = ?, notes = ?, due_date = ?, reminder_at = ?,
-          repeat = ?, category_id = ?, updated_at = ?, completed_at = ?
+          repeat = ?, category_id = ?, updated_at = ?, completed_at = ?,
+          planned_start_date = ?, planned_end_date = ?, urgency_override = ?
          WHERE id = ?`, [
                 next.listId,
                 next.title.trim() || 'Untitled task',
@@ -187,10 +257,21 @@ export class TaskService {
                 next.reminderAt ?? null,
                 next.repeat,
                 next.categoryId ?? null,
-                nowIso(),
+                timestamp,
                 next.completedAt ?? null,
+                next.plannedStartDate ?? null,
+                next.plannedEndDate ?? null,
+                patch.urgencyOverride === undefined
+                    ? (current.urgencyOverride ?? null)
+                    : patch.urgencyOverride,
                 taskId,
             ]);
+            if (completingRepeat) {
+                this.db.run('INSERT INTO recurring_completions (task_id, completed_at) VALUES (?, ?)', [
+                    taskId,
+                    timestamp,
+                ]);
+            }
             this.db.run('DELETE FROM task_tags WHERE task_id = ?', [taskId]);
             for (const tag of next.tags)
                 this.db.run('INSERT OR IGNORE INTO task_tags VALUES (?, ?)', [taskId, tag]);
@@ -198,7 +279,21 @@ export class TaskService {
                 this.db.run('DELETE FROM my_day WHERE task_id = ?', [taskId]);
             if (patch.myDayDate)
                 this.db.run('INSERT OR REPLACE INTO my_day VALUES (?, ?)', [taskId, patch.myDayDate]);
-        });
+        }, completingRepeat);
+        return this.getTask(taskId);
+    }
+    moveTaskPlan(taskId, days) {
+        if (!Number.isSafeInteger(days))
+            throw new Error('Move the plan by a whole number of days.');
+        const modifier = `${days} days`;
+        const [shifted] = this.db.select(`SELECT date(planned_start_date, ?) AS start, date(planned_end_date, ?) AS end
+       FROM tasks WHERE id = ? AND planned_start_date <= planned_end_date`, [modifier, modifier, taskId]);
+        if (!shifted?.start || !shifted.end || shifted.start < '0001-01-01') {
+            throw new Error('Choose a complete plan within the supported calendar range.');
+        }
+        this.db.transaction(() => {
+            this.db.run('UPDATE tasks SET planned_start_date = ?, planned_end_date = ?, updated_at = ? WHERE id = ?', [shifted.start, shifted.end, nowIso(), taskId]);
+        }, true);
         return this.getTask(taskId);
     }
     deleteTask(taskId) {
@@ -298,38 +393,70 @@ export class TaskService {
             .map((item) => item.task);
     }
     /**
-     * Tasks completed this week (Monday 00:00 local → now), grouped by list
-     * in list-creation order; tasks within a group ordered by completion time.
+     * This week's completions and outstanding deadlines, in list-creation order.
      */
     getWeeklyReport() {
-        const now = Date.now();
-        const weekStart = startOfWeek().getTime();
-        const groups = new Map(this.getLists().map((list) => [list.id, { listId: list.id, listName: list.name, tasks: [] }]));
-        for (const task of this.getTasks()) {
-            if (!task.completedAt)
-                continue; // repeating tasks stay active — no completedAt
-            const completed = new Date(task.completedAt).getTime();
-            if (Number.isNaN(completed) || completed < weekStart || completed > now)
-                continue;
-            groups.get(task.listId)?.tasks.push({ title: task.title, completedAt: task.completedAt });
+        const now = new Date();
+        const window = [startOfWeek(now).toISOString(), now.toISOString()];
+        const groups = new Map(this.getLists().map((list) => [
+            list.id,
+            { listId: list.id, listName: list.name, tasks: [], dueSoon: [], overdue: [] },
+        ]));
+        const rows = this.db.select(`WITH completions AS (
+         SELECT task_id, completed_at, 1 AS recurring FROM recurring_completions
+         WHERE completed_at BETWEEN ? AND ?
+         UNION ALL
+         SELECT id, completed_at, 0 FROM tasks
+         WHERE julianday(completed_at) BETWEEN julianday(?) AND julianday(?)
+       )
+       SELECT t.id, t.list_id, t.title, MAX(c.completed_at) AS completed_at,
+              COUNT(*) AS count, MAX(c.recurring) AS recurring
+       FROM completions c JOIN tasks t ON t.id = c.task_id
+       GROUP BY t.id ORDER BY completed_at ASC, t.id ASC`, [...window, ...window]);
+        for (const row of rows) {
+            groups.get(String(row.list_id))?.tasks.push({
+                taskId: String(row.id),
+                title: String(row.title),
+                completedAt: String(row.completed_at),
+                ...(row.recurring ? { completionCount: Number(row.count) } : {}),
+            });
         }
-        return [...groups.values()]
-            .map((group) => ({
-            ...group,
-            tasks: group.tasks.sort((a, b) => a.completedAt.localeCompare(b.completedAt)),
-        }))
-            .filter((group) => group.tasks.length > 0);
+        const today = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, '0'),
+            String(now.getDate()).padStart(2, '0'),
+        ].join('-');
+        const deadlines = this.db.select(`SELECT id, list_id, title, due_date FROM tasks
+       WHERE completed = 0 AND due_date <> '' AND due_date <= date(?, '+2 days')
+       ORDER BY due_date, title, id`, [today]);
+        for (const row of deadlines) {
+            const dueDate = String(row.due_date);
+            const group = groups.get(String(row.list_id));
+            group?.[dueDate < today ? 'overdue' : 'dueSoon'].push({
+                taskId: String(row.id),
+                title: String(row.title),
+                dueDate,
+            });
+        }
+        return [...groups.values()].filter((group) => group.tasks.length || group.dueSoon.length || group.overdue.length);
     }
-    mapTask(row) {
+    mapTask(row, day = localDateKey(new Date())) {
         const taskId = String(row.id);
+        const dueDate = row.due_date ? String(row.due_date) : undefined;
+        const override = row.urgency_override;
+        const urgencyOverride = override === 'urgent' || override === 'not-urgent' ? override : undefined;
         return {
             id: taskId,
             listId: String(row.list_id),
             title: String(row.title),
             completed: Boolean(row.completed),
             important: Boolean(row.important),
+            urgencyOverride,
+            urgent: isTaskUrgent({ dueDate, urgencyOverride }, day),
             notes: String(row.notes ?? ''),
-            dueDate: row.due_date ? String(row.due_date) : undefined,
+            dueDate,
+            plannedStartDate: row.planned_start_date ? String(row.planned_start_date) : undefined,
+            plannedEndDate: row.planned_end_date ? String(row.planned_end_date) : undefined,
             reminderAt: row.reminder_at ? String(row.reminder_at) : undefined,
             repeat: String(row.repeat),
             categoryId: row.category_id ? String(row.category_id) : undefined,

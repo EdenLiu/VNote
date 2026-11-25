@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, safeStorage } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ELECTRON_CHANNELS } from '../shared/electron-api.js';
@@ -10,9 +10,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let service;
 let reminders;
 function registerIpc() {
+    ipcMain.handle(ELECTRON_CHANNELS.aiSettings.get, () => service.getAiSettings());
+    ipcMain.handle(ELECTRON_CHANNELS.aiSettings.save, (_event, patch) => service.saveAiSettings(patch));
     ipcMain.handle('state:get', () => service.getState());
     ipcMain.handle('task:create', (_event, draft) => service.createTask(draft));
     ipcMain.handle('task:update', (_event, id, patch) => service.updateTask(id, patch));
+    ipcMain.handle(ELECTRON_CHANNELS.tasks.movePlan, (_event, id, days) => service.moveTaskPlan(id, days));
     ipcMain.handle('task:delete', (_event, id) => service.deleteTask(id));
     ipcMain.handle('list:create', (_event, draft) => service.createList(draft));
     ipcMain.handle('list:update', (_event, listId, patch) => service.updateList(listId, patch));
@@ -25,8 +28,11 @@ function registerIpc() {
     ipcMain.handle('attachment:open', (_event, id) => openAttachment(service, id));
     ipcMain.handle('attachment:remove', (_event, id) => removeAttachment(service, id));
     ipcMain.handle('suggestions:refresh', () => service.getSuggestions());
+    ipcMain.handle(ELECTRON_CHANNELS.suggestions.recommend, () => service.getAiRecommendations());
+    ipcMain.handle(ELECTRON_CHANNELS.suggestions.accept, (_event, id) => service.acceptAiRecommendation(id));
     ipcMain.handle('myday:add', (_event, taskId, day) => service.addToMyDay(taskId, day));
     ipcMain.handle(ELECTRON_CHANNELS.reports.weekly, () => service.getWeeklyReport());
+    ipcMain.handle(ELECTRON_CHANNELS.reports.generateDraft, () => service.generateWeeklyReportDraft());
 }
 async function createWindow() {
     const window = new BrowserWindow({
@@ -52,19 +58,45 @@ async function createWindow() {
         await window.loadFile(path.join(__dirname, '../renderer/index.html'));
     }
 }
-app.whenReady().then(async () => {
-    service = new TaskService(await VNoteDatabase.open());
+function showPrimaryWindow() {
+    const window = BrowserWindow.getAllWindows()[0];
+    if (window) {
+        if (window.isMinimized())
+            window.restore();
+        window.show();
+        window.focus();
+    }
+    else if (service) {
+        void createWindow();
+    }
+}
+async function startPrimaryInstance() {
+    app.on('second-instance', showPrimaryWindow);
+    app.on('activate', showPrimaryWindow);
+    app.on('window-all-closed', () => {
+        if (process.platform !== 'darwin')
+            app.quit();
+    });
+    app.on('will-quit', () => reminders?.stop());
+    await app.whenReady();
+    service = new TaskService(await VNoteDatabase.open(), {
+        encryptString(value) {
+            if (!safeStorage.isEncryptionAvailable() ||
+                (process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text')) {
+                throw new Error('Secure key storage is unavailable. Unlock your system keyring and retry.');
+            }
+            return safeStorage.encryptString(value);
+        },
+        decryptString: (value) => safeStorage.decryptString(value),
+    });
     registerIpc();
     reminders = new ReminderScheduler(service);
     reminders.start();
     await createWindow();
-});
-app.on('window-all-closed', () => {
-    reminders?.stop();
-    if (process.platform !== 'darwin')
-        app.quit();
-});
-app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0)
-        void createWindow();
-});
+}
+if (app.requestSingleInstanceLock()) {
+    void startPrimaryInstance();
+}
+else {
+    app.quit();
+}
