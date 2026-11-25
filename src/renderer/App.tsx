@@ -8,6 +8,7 @@ import { AiSettingsButton } from './components/common/AiSettings';
 import { SmartViewsNav } from './components/sidebar/SmartViewsNav';
 import { ListsSection } from './components/sidebar/ListsSection';
 import { TaskList } from './components/tasklist/TaskList';
+import { GanttView } from './components/planning/GanttView';
 import { DetailPane } from './components/detail/DetailPane';
 import { DetailHeader } from './components/detail/DetailHeader';
 import { DetailTitle } from './components/detail/DetailTitle';
@@ -56,6 +57,8 @@ export function App() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>();
   const [detailDraft, setDetailDraft] = useState<Partial<Task>>({});
   const [weeklyReportOpen, setWeeklyReportOpen] = useState(false);
+  const [showGantt, setShowGantt] = useState(false);
+  const currentList = lists.find((list) => activeView === `list:${list.id}`);
 
   // Derive the selected task
   const selectedTask = useMemo(
@@ -145,6 +148,15 @@ export function App() {
             <div className="view-meta">{visibleTasks.length} tasks</div>
           </div>
           <div className="toolbar-spacer" />
+          {currentList && (
+            <button
+              className="toolbar-report-button"
+              aria-pressed={showGantt}
+              onClick={() => setShowGantt(!showGantt)}
+            >
+              Gantt
+            </button>
+          )}
           <button
             className="toolbar-report-button"
             onClick={() => setWeeklyReportOpen(true)}
@@ -158,16 +170,24 @@ export function App() {
         {error ? <ErrorBanner message={error} onDismiss={() => setError(null)} /> : null}
 
         <div className="content-grid">
-          <TaskList
-            tasks={visibleTasks}
-            selectedTaskId={selectedTaskId}
-            quickAddListId={quickAddListId}
-            lists={lists}
-            activeView={activeView}
-            onSelectTask={handleSelectTask}
-            onToggleComplete={handleToggleComplete}
-            onCreateTask={handleCreateTask}
-          />
+          {currentList && showGantt ? (
+            <GanttView
+              tasks={visibleTasks}
+              listName={currentList.name}
+              onSelectTask={handleSelectTask}
+            />
+          ) : (
+            <TaskList
+              tasks={visibleTasks}
+              selectedTaskId={selectedTaskId}
+              quickAddListId={quickAddListId}
+              lists={lists}
+              activeView={activeView}
+              onSelectTask={handleSelectTask}
+              onToggleComplete={handleToggleComplete}
+              onCreateTask={handleCreateTask}
+            />
+          )}
 
           {/* ===== DETAIL PANE ===== */}
           <DetailPane>

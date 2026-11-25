@@ -86,6 +86,8 @@ export interface Task {
   important: boolean;
   /** Rich-text or plain-text notes. */
   notes: string;
+  plannedStartDate?: string;
+  plannedEndDate?: string;
   /** ISO-8601 date string (YYYY-MM-DD). */
   dueDate?: string;
   /** ISO-8601 datetime string for an independent reminder. */
@@ -111,6 +113,8 @@ export interface Task {
 export interface TaskDraft {
   title: string;
   listId: string;
+  plannedStartDate?: string;
+  plannedEndDate?: string;
   dueDate?: string;
   reminderAt?: string;
   important?: boolean;
@@ -123,6 +127,8 @@ export interface TaskPatch {
   completed?: boolean;
   important?: boolean;
   notes?: string;
+  plannedStartDate?: string | null;
+  plannedEndDate?: string | null;
   dueDate?: string | null;
   reminderAt?: string | null;
   repeat?: RepeatFrequency;
