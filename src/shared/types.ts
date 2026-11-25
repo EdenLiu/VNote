@@ -207,6 +207,8 @@ export interface VNoteApi {
   createTask(draft: TaskDraft): Promise<Task>;
   /** Apply a partial update to an existing task. */
   updateTask(id: string, patch: TaskPatch): Promise<Task>;
+  /** Shift both planned dates by calendar days, preserving the delivery date. */
+  moveTaskPlan(id: string, days: number): Promise<Task>;
   /** Permanently delete a task and its children (steps, attachments, tags). */
   deleteTask(id: string): Promise<void>;
   /** Create a new user list. */

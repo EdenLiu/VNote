@@ -65,6 +65,11 @@ export function useVNote() {
     [withError],
   );
 
+  const moveTaskPlan = useCallback(
+    (id: string, days: number) => withError(() => window.vnote.moveTaskPlan(id, days)),
+    [withError],
+  );
+
   const createList = useCallback(
     (name: string, color: string) => withError(() => window.vnote.createList({ name, color })),
     [withError],
@@ -141,6 +146,7 @@ export function useVNote() {
     load,
     createTask,
     updateTask,
+    moveTaskPlan,
     deleteTask,
     createList,
     updateList,
