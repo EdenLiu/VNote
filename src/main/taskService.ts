@@ -15,6 +15,15 @@ import type {
 } from '../shared/types.js';
 import { VNoteDatabase, type Row } from './database.js';
 import { isTaskUrgent, localDateKey } from '../shared/urgency.js';
+import type { AiSettingsPatch } from '../shared/ai.js';
+import {
+  readAiSettings,
+  readAiTasks,
+  requestAiCompletion,
+  writeAiSettings,
+  type AiSecretStore,
+  type AiTaskScope,
+} from './ai.js';
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const nowIso = () => new Date().toISOString();
@@ -48,7 +57,26 @@ const addRepeatPeriod = (value: string | undefined, repeat: RepeatFrequency) => 
 };
 
 export class TaskService {
-  constructor(private readonly db: VNoteDatabase) {}
+  constructor(
+    private readonly db: VNoteDatabase,
+    private readonly secrets?: AiSecretStore,
+  ) {}
+
+  getAiSettings() {
+    return readAiSettings(this.db);
+  }
+
+  getAiTasks(scope: AiTaskScope, day = new Date().toLocaleDateString('en-CA')) {
+    return readAiTasks(this.db, scope, day);
+  }
+
+  requestAi(instructions: string, data: unknown) {
+    return requestAiCompletion(this.db, this.secrets, instructions, data);
+  }
+
+  saveAiSettings(patch: AiSettingsPatch) {
+    return writeAiSettings(this.db, patch, this.secrets);
+  }
 
   getState(): AppState {
     return {
@@ -391,14 +419,16 @@ export class TaskService {
   }
 
   /**
-   * Tasks completed this week (Monday 00:00 local → now), grouped by list
-   * in list-creation order; tasks within a group ordered by completion time.
+   * This week's completions and outstanding deadlines, in list-creation order.
    */
   getWeeklyReport(): WeeklyReportGroup[] {
     const now = new Date();
     const window = [startOfWeek(now).toISOString(), now.toISOString()];
     const groups = new Map<string, WeeklyReportGroup>(
-      this.getLists().map((list) => [list.id, { listId: list.id, listName: list.name, tasks: [] }]),
+      this.getLists().map((list) => [
+        list.id,
+        { listId: list.id, listName: list.name, tasks: [], dueSoon: [], overdue: [] },
+      ]),
     );
 
     const rows = this.db.select(
@@ -424,7 +454,30 @@ export class TaskService {
       });
     }
 
-    return [...groups.values()].filter((group) => group.tasks.length > 0);
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-');
+    const deadlines = this.db.select(
+      `SELECT id, list_id, title, due_date FROM tasks
+       WHERE completed = 0 AND due_date <> '' AND due_date <= date(?, '+2 days')
+       ORDER BY due_date, title, id`,
+      [today],
+    );
+    for (const row of deadlines) {
+      const dueDate = String(row.due_date);
+      const group = groups.get(String(row.list_id));
+      group?.[dueDate < today ? 'overdue' : 'dueSoon'].push({
+        taskId: String(row.id),
+        title: String(row.title),
+        dueDate,
+      });
+    }
+
+    return [...groups.values()].filter(
+      (group) => group.tasks.length || group.dueSoon.length || group.overdue.length,
+    );
   }
 
   private mapTask(row: Row, day = localDateKey(new Date())): Task {

@@ -4,6 +4,7 @@ import type { Task, TaskPatch, ViewId } from '@shared/types';
 import { useVNote } from './hooks/useVNote';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { BrandHeader } from './components/sidebar/BrandHeader';
+import { AiSettingsButton } from './components/common/AiSettings';
 import { SmartViewsNav } from './components/sidebar/SmartViewsNav';
 import { ListsSection } from './components/sidebar/ListsSection';
 import { TaskList } from './components/tasklist/TaskList';
@@ -135,6 +136,7 @@ export function App() {
           onDeleteList={(id) => deleteList(id)}
           onToggleSuggestions={(listId, enabled) => toggleSuggestions(listId, enabled)}
         />
+        <AiSettingsButton />
       </Sidebar>
 
       {/* ===== MAIN PANE ===== */}
@@ -298,6 +300,14 @@ export function App() {
       {weeklyReportOpen ? (
         <WeeklyReportModal
           onClose={() => setWeeklyReportOpen(false)}
+          onOpenTask={(taskId) => {
+            const task = tasks.find((item) => item.id === taskId);
+            if (task) {
+              setActiveView(`list:${task.listId}`);
+              setSelectedTaskId(task.id);
+              setWeeklyReportOpen(false);
+            }
+          }}
           fetchReport={getWeeklyReport}
         />
       ) : null}

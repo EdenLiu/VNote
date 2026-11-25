@@ -1,3 +1,5 @@
+import type { AiSettings, AiSettingsPatch } from './ai.js';
+
 /** Priority level for a task — "important" is the starred/flagged state. */
 export type TaskPriority = 'normal' | 'important';
 
@@ -174,12 +176,22 @@ export interface WeeklyReportTask {
   completionCount?: number;
 }
 
-/** Tasks completed this week, grouped by their task list ("project"). */
+export interface WeeklyReportDueTask {
+  taskId: string;
+  title: string;
+  dueDate: string;
+}
+
+/** Local report facts for one task list ("project"). */
 export interface WeeklyReportGroup {
   listId: string;
   listName: string;
   /** Ordered by completion time (oldest first). */
   tasks: WeeklyReportTask[];
+  /** Incomplete tasks due today or on either of the next two local dates. */
+  dueSoon: WeeklyReportDueTask[];
+  /** Incomplete tasks due before today. */
+  overdue: WeeklyReportDueTask[];
 }
 
 /**
@@ -187,6 +199,8 @@ export interface WeeklyReportGroup {
  * Every method maps to an IPC handler in the main process.
  */
 export interface VNoteApi {
+  getAiSettings(): Promise<AiSettings>;
+  saveAiSettings(patch: AiSettingsPatch): Promise<AiSettings>;
   /** Fetch the full application state (lists, categories, tasks). */
   getState(): Promise<AppState>;
   /** Create a new task and return it with all server-generated fields. */
@@ -222,7 +236,7 @@ export interface VNoteApi {
   refreshSuggestions(): Promise<Task[]>;
   /** Add a task to My Day for the given date (defaults to today). */
   addToMyDay(taskId: string, day?: string): Promise<Task>;
-  /** Tasks completed this week, grouped by list, for the weekly report. */
+  /** Weekly completions and outstanding deadlines, grouped by list. */
   getWeeklyReport(): Promise<WeeklyReportGroup[]>;
 }
 

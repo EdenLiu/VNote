@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, safeStorage } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ELECTRON_CHANNELS } from '../shared/electron-api.js';
@@ -12,6 +12,10 @@ let service: TaskService;
 let reminders: ReminderScheduler;
 
 function registerIpc() {
+  ipcMain.handle(ELECTRON_CHANNELS.aiSettings.get, () => service.getAiSettings());
+  ipcMain.handle(ELECTRON_CHANNELS.aiSettings.save, (_event, patch) =>
+    service.saveAiSettings(patch),
+  );
   ipcMain.handle('state:get', () => service.getState());
   ipcMain.handle('task:create', (_event, draft) => service.createTask(draft));
   ipcMain.handle('task:update', (_event, id, patch) => service.updateTask(id, patch));
@@ -59,7 +63,18 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  service = new TaskService(await VNoteDatabase.open());
+  service = new TaskService(await VNoteDatabase.open(), {
+    encryptString(value) {
+      if (
+        !safeStorage.isEncryptionAvailable() ||
+        (process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text')
+      ) {
+        throw new Error('Secure key storage is unavailable. Unlock your system keyring and retry.');
+      }
+      return safeStorage.encryptString(value);
+    },
+    decryptString: (value) => safeStorage.decryptString(value),
+  });
   registerIpc();
   reminders = new ReminderScheduler(service);
   reminders.start();

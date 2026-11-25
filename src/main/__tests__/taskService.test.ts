@@ -557,6 +557,46 @@ describe('TaskService', () => {
   // getWeeklyReport
   // ---------------------------------------------------------------------------
   describe('getWeeklyReport', () => {
+    it('groups unfinished deadlines by local date from Friday through Sunday across a month boundary', () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date(2026, 0, 30, 0, 5));
+        const task = (listId: string, title: string, dueDate?: string) =>
+          service.createTask({ listId, title, dueDate });
+        const overdue = task('work', 'Review', '2026-01-29');
+        const friday = task('inbox', 'Review', '2026-01-30');
+        const sunday = task('inbox', 'Publish', '2026-02-01');
+        task('inbox', 'Next Monday', '2026-02-02');
+        task('inbox', 'Unscheduled');
+        const finished = task('inbox', 'Already sent', '2026-01-29');
+        service.updateTask(finished.id, { completed: true });
+
+        expect(service.getWeeklyReport()).toEqual([
+          {
+            listId: 'inbox',
+            listName: 'Tasks',
+            tasks: [
+              { taskId: finished.id, title: 'Already sent', completedAt: new Date().toISOString() },
+            ],
+            dueSoon: [
+              { taskId: friday.id, title: 'Review', dueDate: '2026-01-30' },
+              { taskId: sunday.id, title: 'Publish', dueDate: '2026-02-01' },
+            ],
+            overdue: [],
+          },
+          {
+            listId: 'work',
+            listName: 'Work',
+            tasks: [],
+            dueSoon: [],
+            overdue: [{ taskId: overdue.id, title: 'Review', dueDate: '2026-01-29' }],
+          },
+        ]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     // Exposes the raw DB so tests can inject deterministic completed_at timestamps.
     async function serviceWithDb() {
       const testDb = await createTestDb();

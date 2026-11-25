@@ -40,6 +40,8 @@ it('counts three completed occurrences under the original task and keeps its dai
     {
       listId: 'work',
       listName: 'Work',
+      dueSoon: [{ taskId: task.id, title: '巡检', dueDate: '2026-11-26' }],
+      overdue: [],
       tasks: [
         {
           taskId: task.id,
@@ -69,10 +71,10 @@ it('rolls back a failed save and persists both changes on retry before returning
   });
   expect(() => service.updateTask(task.id, { completed: true })).toThrow('Disk full');
   expect(service.getTask(task.id).dueDate).toBe('2026-11-25');
-  expect(service.getWeeklyReport()).toEqual([]);
+  expect(service.getWeeklyReport()[0].tasks).toEqual([]);
   const reopened = new TaskService(await VNoteDatabase.open());
   expect(reopened.getTask(task.id).dueDate).toBe('2026-11-25');
-  expect(reopened.getWeeklyReport()).toEqual([]);
+  expect(reopened.getWeeklyReport()[0].tasks).toEqual([]);
 
   reopened.updateTask(task.id, { completed: true });
   const retried = new TaskService(await VNoteDatabase.open());
@@ -105,12 +107,12 @@ it('upgrades a legacy schedule without inventing past completions and counts fro
   legacy.close();
   vi.setSystemTime(new Date(2026, 10, 22, 23, 59, 59, 999));
   const service = new TaskService(await VNoteDatabase.open());
-  expect(service.getWeeklyReport()).toEqual([]);
+  expect(service.getWeeklyReport()[0].tasks).toEqual([]);
   service.updateTask('old', { completed: true });
   expect(service.getWeeklyReport()[0].tasks[0].completionCount).toBe(1);
 
   vi.setSystemTime(new Date(2026, 10, 23));
-  expect(service.getWeeklyReport()).toEqual([]);
+  expect(service.getWeeklyReport()[0].tasks).toEqual([]);
   service.updateTask('old', { completed: true });
   const single = service.createTask({ title: 'One-off', listId: 'inbox' });
   service.updateTask(single.id, { completed: true });
