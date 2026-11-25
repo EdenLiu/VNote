@@ -157,9 +157,12 @@ export interface AttachmentResult {
 
 /** A single completed task inside a weekly report group. */
 export interface WeeklyReportTask {
+  taskId: string;
   title: string;
-  /** ISO-8601 UTC timestamp when the task was completed. */
+  /** Most recent included completion, in UTC. */
   completedAt: string;
+  /** Present when the total includes recurring occurrences. */
+  completionCount?: number;
 }
 
 /** Tasks completed this week, grouped by their task list ("project"). */
