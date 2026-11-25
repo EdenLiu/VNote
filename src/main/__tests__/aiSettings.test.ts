@@ -47,7 +47,6 @@ it('requires an explicit AI grant for both upgraded and newly created lists and 
     { id: personal.id, name: 'Personal', allowAi: false },
   ]);
   service.saveAiSettings({ listAccess: { work: true } });
-  db.flush();
   const reopened = new TaskService(await VNoteDatabase.open());
   expect(reopened.getAiSettings().lists[0].allowAi).toBe(true);
   expect(reopened.getLists()[0].includeInSuggestions).toBe(false);
@@ -67,7 +66,6 @@ it('persists only an encrypted key, reports its presence, and preserves or repla
   const config = { baseUrl: 'https://model.example/v1', model: 'small', includeNotes: true };
   const saved = service.saveAiSettings({ ...config, apiKey: 'first-secret' });
   expect(saved).toEqual({ ...config, hasApiKey: true, lists: expect.any(Array) });
-  db.flush();
   expect(fs.readFileSync(disk).includes('first-secret')).toBe(false);
   const reopened = new TaskService(await VNoteDatabase.open(), secrets);
   expect(reopened.getAiSettings()).toEqual(saved);

@@ -175,6 +175,6 @@ export function writeAiSettings(
         db.run('DELETE FROM ai_list_access WHERE list_id = ?', [id]);
       }
     }
-  });
+  }, true);
   return readAiSettings(db);
 }
