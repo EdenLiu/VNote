@@ -12,6 +12,8 @@ export interface AiTask {
   completed: boolean;
   important: boolean;
   dueDate?: string;
+  plannedStartDate?: string;
+  plannedEndDate?: string;
   completedAt?: string;
   myDayDate?: string;
   notes?: string;
@@ -27,7 +29,8 @@ export function readAiTasks(db: VNoteDatabase, scope: AiTaskScope, day: string):
   const rows = db.select(
     `
     SELECT t.id, t.list_id, l.name list_name, t.title, t.completed, t.important, t.due_date,
-      t.completed_at, md.day, CASE WHEN cfg.include_notes = 1 THEN t.notes END AS notes
+      t.planned_start_date, t.planned_end_date, t.completed_at, md.day,
+      CASE WHEN cfg.include_notes = 1 THEN t.notes END AS notes
     FROM ai_list_access a JOIN lists l ON l.id = a.list_id JOIN tasks t ON t.list_id = l.id
     LEFT JOIN my_day md ON md.task_id = t.id LEFT JOIN ai_settings cfg ON cfg.id = 1
     ${filters[scope]} ORDER BY t.created_at, t.rowid`,
@@ -41,6 +44,8 @@ export function readAiTasks(db: VNoteDatabase, scope: AiTaskScope, day: string):
     completed: Boolean(r.completed),
     important: Boolean(r.important),
     ...(r.due_date && { dueDate: String(r.due_date) }),
+    ...(r.planned_start_date && { plannedStartDate: String(r.planned_start_date) }),
+    ...(r.planned_end_date && { plannedEndDate: String(r.planned_end_date) }),
     ...(scope === 'report' && r.completed_at && { completedAt: String(r.completed_at) }),
     ...(scope === 'my-day' && { myDayDate: day }),
     ...(r.notes && { notes: String(r.notes) }),

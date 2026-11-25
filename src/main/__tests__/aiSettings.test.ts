@@ -78,7 +78,13 @@ it('persists only an encrypted key, reports its presence, and preserves or repla
 it('projects only authorized fields and respects the independent candidate and My Day rules', async () => {
   const service = new TaskService(await VNoteDatabase.open());
   const day = '2026-11-25';
-  const work = service.createTask({ title: 'Review schedule', listId: 'work', dueDate: day });
+  const work = service.createTask({
+    title: 'Review schedule',
+    listId: 'work',
+    dueDate: day,
+    plannedStartDate: '2026-11-23',
+    plannedEndDate: '2026-11-24',
+  });
   service.updateTask(work.id, { notes: 'Internal context', tags: ['private'], myDayDate: day });
   service.addStep(work.id, { title: 'Private step' });
   service.createAttachment(work.id, { name: 'secret.txt', size: 4, storedPath: 'C:/private/file' });
@@ -104,6 +110,8 @@ it('projects only authorized fields and respects the independent candidate and M
       listName: 'Work',
       title: 'Review schedule',
       dueDate: day,
+      plannedStartDate: '2026-11-23',
+      plannedEndDate: '2026-11-24',
       completed: false,
       important: false,
       myDayDate: day,
