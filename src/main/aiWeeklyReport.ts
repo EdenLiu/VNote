@@ -1,5 +1,5 @@
 import type { WeeklyReportGroup } from '../shared/types.js';
-import type { AiTask } from './ai.js';
+import { parseAiJson, type AiTask } from './ai.js';
 
 const sections = [
   ['completed', 'tasks'],
@@ -19,35 +19,49 @@ export async function draftWeeklyReport(
   authorized: AiTask[],
   request: (prompt: string, data: unknown) => Promise<string>,
 ): Promise<WeeklyReportGroup[]> {
-  const allowedLists = new Set(authorized.map((task) => task.listId));
-  const notes = new Map(authorized.map((task) => [task.id, task.notes]));
-  const groups = localReport.filter((group) => allowedLists.has(group.listId));
+  const sources = new Map(authorized.map((task) => [task.id, task]));
+  const groups = localReport
+    .map((group) => {
+      const allowed = (item: { taskId: string }) =>
+        sources.get(item.taskId)?.listId === group.listId;
+      return {
+        ...group,
+        tasks: group.tasks.filter(allowed),
+        overdue: group.overdue.filter(allowed),
+        dueSoon: group.dueSoon.filter(allowed),
+      };
+    })
+    .filter((group) => group.tasks.length || group.overdue.length || group.dueSoon.length);
   if (!groups.length) {
     throw new Error(
       'No reportable tasks in lists available to AI. Check list access in AI settings.',
     );
   }
-  const projects = groups.map(({ listId, listName, ...facts }) => ({
-    listId,
-    listName,
+  const projects = groups.map((group) => ({
+    listId: group.listId,
+    listName: group.listName,
     items: sections.flatMap(([section, key]) =>
-      facts[key].map((task) => ({
-        section,
-        ...task,
-        notes: notes.get(task.taskId),
-      })),
+      group[key].map((fact) => {
+        const source = sources.get(fact.taskId)!;
+        return {
+          section,
+          taskId: source.id,
+          title: source.title,
+          plannedStartDate: source.plannedStartDate,
+          plannedEndDate: source.plannedEndDate,
+          notes: source.notes,
+          ...('completedAt' in fact
+            ? { completedAt: fact.completedAt, completionCount: fact.completionCount }
+            : { dueDate: source.dueDate }),
+        };
+      }),
     ),
   }));
   const reply = await request(instructions, { projects });
   const invalid = 'The AI service returned no usable report wording. Retry generation.';
   let parsed;
   try {
-    parsed = JSON.parse(
-      reply
-        .trim()
-        .replace(/^```(?:json)?\s*/i, '')
-        .replace(/\s*```$/, ''),
-    );
+    parsed = parseAiJson(reply);
   } catch {
     throw new Error(invalid);
   }

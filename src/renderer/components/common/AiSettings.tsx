@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Settings2, X } from 'lucide-react';
 import type { AiSettings, AiSettingsPatch } from '@shared/ai';
-import './AiSettings.css';
 
 export function AiSettingsButton({ onSaved }: { onSaved?: () => void }) {
   const [open, setOpen] = useState(false);

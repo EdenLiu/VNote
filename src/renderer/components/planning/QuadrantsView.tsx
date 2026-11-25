@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Task, TaskList, TaskPatch } from '@shared/types';
 import { isTaskUrgent } from '@shared/urgency';
-import './quadrants.css';
 
 const quadrants = [
   { name: 'Important and urgent', important: true, urgent: true },

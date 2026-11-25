@@ -27,6 +27,8 @@ async function openSuggestions(overrides: Partial<VNoteApi> = {}) {
   const getAiRecommendations = vi.fn(async () =>
     tasks.map((task) => ({
       taskId: task.id,
+      listId: task.listId,
+      evidence: { basis: 'important' as const },
       reason: 'Starred as important in Work.',
     })),
   );
@@ -46,6 +48,11 @@ async function openSuggestions(overrides: Partial<VNoteApi> = {}) {
     }),
     getAiRecommendations,
     acceptAiRecommendation,
+    updateTask: async (id, { important }) => {
+      const index = tasks.findIndex((task) => task.id === id);
+      tasks[index] = { ...tasks[index], important: important ?? tasks[index].important };
+      return tasks[index];
+    },
     refreshSuggestions: async () => tasks.filter((t) => !t.myDayDate),
     ...overrides,
   } satisfies Partial<VNoteApi>);
@@ -113,4 +120,16 @@ it('keeps an offered task available for another attempt after adoption fails', a
   expect(await screen.findByText(/Could not save task/i)).toBeVisible();
   expect(ai.getByRole('button', { name: titles[0] })).toBeVisible();
   expect(ai.getAllByRole('button', { name: 'Add to My Day' })).toHaveLength(2);
+});
+
+it('withdraws a card when a task edit invalidates its reason and keeps other cards', async () => {
+  const { getAiRecommendations, acceptAiRecommendation } = await openSuggestions();
+  fireEvent.click(screen.getByRole('button', { name: 'Get AI recommendations' }));
+  const ai = within(screen.getByRole('region', { name: 'AI recommendations' }));
+  fireEvent.click(await ai.findByRole('button', { name: titles[0] }));
+  fireEvent.click(screen.getByRole('button', { name: 'Remove importance' }));
+  await waitFor(() => expect(ai.queryByRole('button', { name: titles[0] })).toBeNull());
+  expect(ai.getByRole('button', { name: titles[1] })).toBeVisible();
+  expect(getAiRecommendations).toHaveBeenCalledTimes(1);
+  expect(acceptAiRecommendation).not.toHaveBeenCalled();
 });

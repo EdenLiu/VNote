@@ -221,7 +221,7 @@ describe('TaskService', () => {
         expect(completed.dueDate).toBe('2026-06-22');
       });
 
-      it('advances reminderAt alongside dueDate for repeating tasks', async () => {
+      it('advances the due day and keeps the local reminder time for repeating tasks', async () => {
         const task = service.createTask({
           title: 'meeting',
           listId: 'inbox',
@@ -230,10 +230,8 @@ describe('TaskService', () => {
         });
         service.updateTask(task.id, { repeat: 'daily' });
         const completed = service.updateTask(task.id, { completed: true });
-        // addRepeatPeriod uses new Date() (local) → toISOString() (UTC), so compute expected dynamically
-        const expected = new Date('2026-05-22T09:00');
-        expected.setDate(expected.getDate() + 1);
-        expect(completed.reminderAt).toBe(expected.toISOString().slice(0, 16));
+        expect(completed.dueDate).toBe('2026-05-23');
+        expect(completed.reminderAt).toBe('2026-05-23T09:00');
       });
 
       it('non-repeating tasks complete normally (stay completed)', async () => {

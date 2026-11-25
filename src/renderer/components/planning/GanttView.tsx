@@ -1,6 +1,5 @@
 import type { Task } from '@shared/types';
 import { GanttPlanBar } from './GanttPlanBar';
-import './gantt.css';
 
 const DAY_MS = 86_400_000;
 const dayNumber = (date?: string) => (date ? Date.parse(date) / DAY_MS : NaN);

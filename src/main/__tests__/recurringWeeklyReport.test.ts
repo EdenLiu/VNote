@@ -62,7 +62,13 @@ it('counts three completed occurrences under the original task and keeps its dai
 it('rolls back a failed save and persists both changes on retry before returning', async () => {
   const db = await VNoteDatabase.open();
   const service = new TaskService(db);
-  const task = service.createTask({ title: 'Inspect', listId: 'work', dueDate: '2026-11-25' });
+  const task = service.createTask({
+    title: 'Inspect',
+    listId: 'work',
+    plannedStartDate: '2026-11-23',
+    plannedEndDate: '2026-11-24',
+    dueDate: '2026-11-25',
+  });
   service.updateTask(task.id, { repeat: 'weekly' });
   db.flush();
 
@@ -70,15 +76,22 @@ it('rolls back a failed save and persists both changes on retry before returning
     throw new Error('Disk full');
   });
   expect(() => service.updateTask(task.id, { completed: true })).toThrow('Disk full');
-  expect(service.getTask(task.id).dueDate).toBe('2026-11-25');
+  const originalDates = {
+    plannedStartDate: '2026-11-23',
+    plannedEndDate: '2026-11-24',
+    dueDate: '2026-11-25',
+  };
+  expect(service.getTask(task.id)).toMatchObject(originalDates);
   expect(service.getWeeklyReport()[0].tasks).toEqual([]);
   const reopened = new TaskService(await VNoteDatabase.open());
-  expect(reopened.getTask(task.id).dueDate).toBe('2026-11-25');
+  expect(reopened.getTask(task.id)).toMatchObject(originalDates);
   expect(reopened.getWeeklyReport()[0].tasks).toEqual([]);
 
   reopened.updateTask(task.id, { completed: true });
   const retried = new TaskService(await VNoteDatabase.open());
   expect(retried.getTask(task.id)).toMatchObject({
+    plannedStartDate: '2026-11-30',
+    plannedEndDate: '2026-12-01',
     dueDate: '2026-12-02',
     completed: false,
     repeat: 'weekly',
@@ -88,6 +101,33 @@ it('rolls back a failed save and persists both changes on retry before returning
     completionCount: 1,
   });
 });
+
+it.each(['plannedStartDate', 'plannedEndDate'] as const)(
+  'advances a monthly plan with only %s to the last available day of the next month',
+  async (field) => {
+    const service = new TaskService(await VNoteDatabase.open());
+    const task = service.createTask({
+      title: 'Close month',
+      listId: 'work',
+      [field]: '2028-01-31',
+    });
+    service.updateTask(task.id, { repeat: 'monthly' });
+    service.updateTask(task.id, { completed: true });
+
+    const reopened = new TaskService(await VNoteDatabase.open());
+    const next = reopened.getTask(task.id);
+    expect(next[field]).toBe('2028-02-29');
+    expect(
+      next[field === 'plannedStartDate' ? 'plannedEndDate' : 'plannedStartDate'],
+    ).toBeUndefined();
+    expect(next.dueDate).toBeUndefined();
+    expect(next.reminderAt).toBeUndefined();
+    expect(next.completed).toBe(false);
+    expect(reopened.getWeeklyReport()[0].tasks).toMatchObject([
+      { taskId: task.id, completionCount: 1 },
+    ]);
+  },
+);
 
 it('upgrades a legacy schedule without inventing past completions and counts from local Monday through generation time', async () => {
   const SQL = await initSqlJs();

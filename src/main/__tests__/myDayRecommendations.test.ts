@@ -56,7 +56,7 @@ it('sends only authorized candidates and My Day context, returning a sourced rea
   fetchModel.mockResolvedValue(reply([{ taskId: candidate.id, basis: 'dueDate' }]));
 
   expect(fetchModel).not.toHaveBeenCalled();
-  await expect(service.getAiRecommendations()).resolves.toEqual([
+  await expect(service.getAiRecommendations()).resolves.toMatchObject([
     { taskId: candidate.id, reason: 'Due today (2026-11-25).' },
   ]);
   const request = JSON.parse(fetchModel.mock.calls[0][1].body);
@@ -107,7 +107,7 @@ it('checks the submitted and still eligible candidates, verifies their evidence,
       star(fourth.id),
     ]),
   );
-  await expect(pending).resolves.toEqual(
+  await expect(pending).resolves.toMatchObject(
     [first, second, third].map(({ id }) => ({
       taskId: id,
       reason: 'Starred as important in Tasks.',
@@ -146,6 +146,29 @@ it('adds only an offered, still eligible task to the local My Day without changi
   expect(service.getTask(remaining.id).myDayDate).toBeUndefined();
 });
 
+it.each([
+  ['dueDate', { dueDate: '2026-12-01' }],
+  ['important', { important: false }],
+  ['title', { title: 'Archived' }],
+  ['notes', { notes: 'Archived' }],
+] as const)('declines an offered task when its %s evidence has changed', async (basis, patch) => {
+  const task = service.createTask({
+    listId: 'inbox',
+    title: 'Act now',
+    important: true,
+    dueDate: today,
+  });
+  service.updateTask(task.id, { notes: 'Act now' });
+  service.saveAiSettings({ includeNotes: true });
+  fetchModel.mockResolvedValue(reply([{ taskId: task.id, basis, quote: 'Act now' }]));
+  expect(await service.getAiRecommendations()).toHaveLength(1);
+
+  service.updateTask(task.id, patch);
+  expect(() => service.acceptAiRecommendation(task.id)).toThrow(/request recommendations again/i);
+  expect(service.getTask(task.id).myDayDate).toBeUndefined();
+  expect(fetchModel).toHaveBeenCalledTimes(1);
+});
+
 it('skips sending My Day context alone and keeps rule suggestions available after an invalid or unconfigured response', async () => {
   const mine = service.createTask({ listId: 'work', title: 'Already in My Day' });
   service.addToMyDay(mine.id);
@@ -158,4 +181,14 @@ it('skips sending My Day context alone and keeps rule suggestions available afte
   service.saveAiSettings({ apiKey: null });
   await expect(service.getAiRecommendations()).rejects.toThrow(/settings/i);
   expect(fetchModel).toHaveBeenCalledTimes(1);
+});
+
+it('accepts a JSON code block from the configured model', async () => {
+  const task = service.createTask({ listId: 'work', title: 'Submit plan', dueDate: today });
+  const json = JSON.stringify({ recommendations: [{ taskId: task.id, basis: 'dueDate' }] });
+  const content = ['```json', json, '```'].join('\n');
+  fetchModel.mockResolvedValue(Response.json({ choices: [{ message: { content } }] }));
+  await expect(service.getAiRecommendations()).resolves.toMatchObject([
+    { taskId: task.id, reason: 'Due today (2026-11-25).' },
+  ]);
 });

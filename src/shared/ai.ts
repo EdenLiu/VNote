@@ -6,8 +6,14 @@ export interface AiListAccess {
 
 export interface MyDayRecommendation {
   taskId: string;
+  listId: string;
   reason: string;
+  evidence: RecommendationEvidence;
 }
+
+export type RecommendationEvidence =
+  | { basis: 'dueDate' | 'plannedStartDate' | 'plannedEndDate' | 'important' }
+  | { basis: 'title' | 'notes'; quote: string };
 
 export interface AiSettings {
   baseUrl: string;

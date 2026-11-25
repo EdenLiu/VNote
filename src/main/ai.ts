@@ -3,6 +3,12 @@ import type { VNoteDatabase } from './database.js';
 
 export type AiTaskScope = 'report' | 'candidates' | 'my-day';
 
+export function parseAiJson(content: string) {
+  const text = content.trim();
+  const fenced = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(text);
+  return JSON.parse(fenced ? fenced[1] : text);
+}
+
 /** This is the full allowlist at the cloud boundary. Never serialize the application's Task. */
 export interface AiTask {
   id: string;
