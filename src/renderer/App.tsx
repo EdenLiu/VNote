@@ -41,6 +41,7 @@ export function App() {
     setError,
     createTask,
     updateTask,
+    moveTaskPlan,
     deleteTask,
     createList,
     updateList,
@@ -174,6 +175,7 @@ export function App() {
             <GanttView
               tasks={visibleTasks}
               listName={currentList.name}
+              onMovePlan={moveTaskPlan}
               onSelectTask={handleSelectTask}
             />
           ) : (

@@ -294,6 +294,26 @@ export class TaskService {
     return this.getTask(taskId);
   }
 
+  moveTaskPlan(taskId: string, days: number): Task {
+    if (!Number.isSafeInteger(days)) throw new Error('Move the plan by a whole number of days.');
+    const modifier = `${days} days`;
+    const [shifted] = this.db.select(
+      `SELECT date(planned_start_date, ?) AS start, date(planned_end_date, ?) AS end
+       FROM tasks WHERE id = ? AND planned_start_date <= planned_end_date`,
+      [modifier, modifier, taskId],
+    );
+    if (!shifted?.start || !shifted.end || shifted.start < '0001-01-01') {
+      throw new Error('Choose a complete plan within the supported calendar range.');
+    }
+    this.db.transaction(() => {
+      this.db.run(
+        'UPDATE tasks SET planned_start_date = ?, planned_end_date = ?, updated_at = ? WHERE id = ?',
+        [shifted.start, shifted.end, nowIso(), taskId],
+      );
+    }, true);
+    return this.getTask(taskId);
+  }
+
   deleteTask(taskId: string) {
     this.db.run('DELETE FROM tasks WHERE id = ?', [taskId]);
   }
