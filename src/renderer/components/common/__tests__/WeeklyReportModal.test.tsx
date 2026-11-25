@@ -9,14 +9,14 @@ const groups: WeeklyReportGroup[] = [
     listId: 'inbox',
     listName: 'Tasks',
     tasks: [
-      { title: 'task 1', completedAt: '2026-08-03T02:00:00.000Z' },
-      { title: 'task 2', completedAt: '2026-08-03T03:00:00.000Z' },
+      { taskId: '1', title: 'task 1', completedAt: '2026-08-03T02:00:00.000Z' },
+      { taskId: '2', title: 'task 2', completedAt: '2026-08-03T03:00:00.000Z' },
     ],
   },
   {
     listId: 'work',
     listName: 'Work',
-    tasks: [{ title: 'task 3', completedAt: '2026-08-04T02:00:00.000Z' }],
+    tasks: [{ taskId: '3', title: 'task 3', completedAt: '2026-08-04T02:00:00.000Z' }],
   },
 ];
 

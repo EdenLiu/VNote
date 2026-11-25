@@ -9,6 +9,7 @@ declare module 'sql.js' {
     run(sql: string, params?: unknown[]): void;
     prepare(sql: string, params?: unknown[]): Statement;
     export(): Uint8Array;
+    close(): void;
   }
 
   export interface SqlJsStatic {
