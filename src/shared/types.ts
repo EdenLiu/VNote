@@ -3,6 +3,9 @@ import type { AiSettings, AiSettingsPatch } from './ai.js';
 /** Priority level for a task — "important" is the starred/flagged state. */
 export type TaskPriority = 'normal' | 'important';
 
+/** An explicit choice in the quadrant view. Without one, the due date determines urgency. */
+export type UrgencyOverride = 'urgent' | 'not-urgent';
+
 /** Recurrence cadence for repeating tasks. */
 export type RepeatFrequency = 'none' | 'daily' | 'weekly' | 'monthly';
 
@@ -11,6 +14,7 @@ export type SmartViewId =
   | 'my-day'
   | 'suggestions'
   | 'planned'
+  | 'quadrants'
   | 'important'
   | 'completed';
 
@@ -84,6 +88,9 @@ export interface Task {
   completed: boolean;
   /** Starred / flagged as important. */
   important: boolean;
+  /** Effective urgency for the local calendar day when the task was read. */
+  urgent: boolean;
+  urgencyOverride?: UrgencyOverride;
   /** Rich-text or plain-text notes. */
   notes: string;
   plannedStartDate?: string;
@@ -126,6 +133,8 @@ export interface TaskPatch {
   listId?: string;
   completed?: boolean;
   important?: boolean;
+  /** Null restores automatic urgency without changing importance or dates. */
+  urgencyOverride?: UrgencyOverride | null;
   notes?: string;
   plannedStartDate?: string | null;
   plannedEndDate?: string | null;

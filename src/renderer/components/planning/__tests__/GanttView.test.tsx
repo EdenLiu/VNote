@@ -10,6 +10,7 @@ function task(title: string, dates: Partial<Task> = {}): Task {
     listId: 'work',
     completed: false,
     important: false,
+    urgent: false,
     notes: '',
     createdAt: '',
     updatedAt: '',

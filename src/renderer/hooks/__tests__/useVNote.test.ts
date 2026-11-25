@@ -20,6 +20,7 @@ function mockTask(overrides: Partial<Task> = {}): Task {
     title: 'Test',
     completed: false,
     important: false,
+    urgent: false,
     notes: '',
     repeat: 'none',
     source: 'manual',
