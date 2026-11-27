@@ -1,28 +1,51 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import type { WeeklyReportGroup } from '@shared/types';
-
-/** Turn grouped report data into the copy-ready text format. */
-export function formatWeeklyReport(groups: WeeklyReportGroup[]): string {
-  return groups
-    .map(
-      (group) => `${group.listName}:\n${group.tasks.map((task) => `- ${task.title}`).join('\n')}`,
-    )
-    .join('\n\n');
-}
+import { formatWeeklyReport, reportSections } from './weeklyReportFormat';
 
 interface WeeklyReportModalProps {
+  open?: boolean;
   onClose: () => void;
+  onOpenTask: (taskId: string) => void;
   fetchReport: () => Promise<WeeklyReportGroup[] | undefined>;
 }
 
-export function WeeklyReportModal({ onClose, fetchReport }: WeeklyReportModalProps) {
+interface Draft {
+  source: 'AI draft' | 'Manual draft';
+  groups: WeeklyReportGroup[];
+  text: string;
+  edited?: boolean;
+}
+
+export function WeeklyReportModal({ open = true, ...props }: WeeklyReportModalProps) {
+  const [draft, setDraft] = useState<Draft>();
+  return open ? <ReportDialog {...props} draft={draft} setDraft={setDraft} /> : null;
+}
+
+function ReportDialog({
+  onClose,
+  onOpenTask,
+  fetchReport,
+  draft,
+  setDraft,
+}: WeeklyReportModalProps & {
+  draft?: Draft;
+  setDraft: (draft: Draft) => void;
+}) {
   const [groups, setGroups] = useState<WeeklyReportGroup[] | undefined>();
   const [failed, setFailed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showDraft, setShowDraft] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState('');
+  const [replacement, setReplacement] = useState<Draft>();
+  const protectEdits = useRef(false);
+  const active = useRef(true);
+  const visibleGroups = showDraft ? draft?.groups : groups;
 
   useEffect(() => {
     let cancelled = false;
+    active.current = true;
     void fetchReport().then((result) => {
       if (cancelled) return;
       setGroups(result ?? []);
@@ -30,6 +53,7 @@ export function WeeklyReportModal({ onClose, fetchReport }: WeeklyReportModalPro
     });
     return () => {
       cancelled = true;
+      active.current = false;
     };
   }, [fetchReport]);
 
@@ -44,11 +68,37 @@ export function WeeklyReportModal({ onClose, fetchReport }: WeeklyReportModalPro
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(formatWeeklyReport(groups ?? []));
+      await navigator.clipboard.writeText(
+        showDraft && draft ? draft.text : formatWeeklyReport(groups ?? []),
+      );
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
       setCopied(false); // fall through: clipboard unavailable
+    }
+  };
+
+  const generate = async () => {
+    setGenerating(true);
+    setError('');
+    setReplacement(undefined);
+    protectEdits.current = Boolean(draft?.edited);
+    try {
+      const result = await window.vnote.generateWeeklyReportDraft();
+      if (!active.current) return;
+      const next: Draft = { source: 'AI draft', groups: result, text: formatWeeklyReport(result) };
+      if (protectEdits.current) setReplacement(next);
+      else setDraft(next);
+      setShowDraft(true);
+    } catch (cause) {
+      if (active.current)
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : 'Could not generate the draft. Retry generation.',
+        );
+    } finally {
+      if (active.current) setGenerating(false);
     }
   };
 
@@ -68,24 +118,101 @@ export function WeeklyReportModal({ onClose, fetchReport }: WeeklyReportModalPro
           </button>
         </div>
         <div className="modal-body">
-          {groups === undefined ? (
+          <div className="report-mode">
+            <h3>{showDraft ? draft?.source : 'Local report'}</h3>
+            {draft && (
+              <button className="text-button" onClick={() => setShowDraft(!showDraft)}>
+                {showDraft ? 'View local report' : 'View draft'}
+              </button>
+            )}
+          </div>
+          {error && (
+            <p role="alert" className="ai-settings-error">
+              {error}
+              {!draft && (
+                <button
+                  className="text-button"
+                  onClick={() => {
+                    setDraft({ source: 'Manual draft', groups: [], text: '' });
+                    setShowDraft(true);
+                  }}
+                >
+                  Write draft
+                </button>
+              )}
+            </p>
+          )}
+          {showDraft && draft && (
+            <>
+              {replacement && (
+                <div className="report-replacement">
+                  <span role="status">A new draft is ready.</span>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setDraft(replacement);
+                      setReplacement(undefined);
+                    }}
+                  >
+                    Use new draft
+                  </button>
+                  <button className="text-button" onClick={() => setReplacement(undefined)}>
+                    Keep edits
+                  </button>
+                </div>
+              )}
+              <textarea
+                aria-label={draft.source}
+                className="report-editor"
+                rows={9}
+                value={draft.text}
+                onChange={(event) => {
+                  protectEdits.current = true;
+                  setDraft({ ...draft, text: event.target.value, edited: true });
+                }}
+              />
+              {draft.groups.length > 0 && <h3>Source tasks</h3>}
+            </>
+          )}
+          {visibleGroups === undefined ? (
             <p className="modal-message">Loading…</p>
-          ) : failed ? (
+          ) : !showDraft && failed ? (
             <p className="modal-message">Could not load the weekly report.</p>
-          ) : groups.length === 0 ? (
-            <p className="modal-message">No tasks completed this week.</p>
+          ) : visibleGroups.length === 0 ? (
+            !showDraft && <p className="modal-message">No tasks to report this week.</p>
           ) : (
-            <pre className="report-text">{formatWeeklyReport(groups)}</pre>
+            visibleGroups.map((group) => (
+              <section key={group.listId} className="report-project" aria-label={group.listName}>
+                <h3>{group.listName}</h3>
+                {reportSections(group).map(({ heading, entries }) => (
+                  <div key={heading}>
+                    <h4>{heading}</h4>
+                    <ul>
+                      {entries.map(({ taskId, label }) => (
+                        <li key={taskId}>
+                          <button className="report-source" onClick={() => onOpenTask(taskId)}>
+                            {label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </section>
+            ))
           )}
         </div>
-        {groups && groups.length > 0 && !failed ? (
-          <div className="modal-footer">
-            {copied ? <span className="copy-confirmation">Copied!</span> : null}
+        <div className="modal-footer">
+          {copied ? <span className="copy-confirmation">Copied!</span> : null}
+          {(showDraft || (groups && groups.length > 0 && !failed)) && (
             <button className="secondary-button modal-copy-button" onClick={handleCopy}>
-              Copy to clipboard
+              {showDraft ? 'Copy draft' : 'Copy to clipboard'}
             </button>
-          </div>
-        ) : null}
+          )}
+          <button className="toolbar-report-button" disabled={generating} onClick={generate}>
+            {generating ? 'Generating…' : error ? 'Retry' : 'Generate draft'}
+          </button>
+        </div>
       </div>
     </div>
   );

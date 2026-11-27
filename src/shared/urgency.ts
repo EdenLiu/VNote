@@ -1,0 +1,12 @@
+import type { Task } from './types.js';
+
+export function localDateKey(date: Date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+export function isTaskUrgent(task: Pick<Task, 'dueDate' | 'urgencyOverride'>, day: string) {
+  if (task.urgencyOverride) return task.urgencyOverride === 'urgent';
+  return Boolean(task.dueDate && task.dueDate <= day);
+}

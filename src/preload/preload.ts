@@ -3,9 +3,12 @@ import { ELECTRON_CHANNELS } from '../shared/electron-api.js';
 import type { VNoteApi } from '../shared/types.js';
 
 const api: VNoteApi = {
+  getAiSettings: () => ipcRenderer.invoke(ELECTRON_CHANNELS.aiSettings.get),
+  saveAiSettings: (patch) => ipcRenderer.invoke(ELECTRON_CHANNELS.aiSettings.save, patch),
   getState: () => ipcRenderer.invoke('state:get'),
   createTask: (draft) => ipcRenderer.invoke('task:create', draft),
   updateTask: (id, patch) => ipcRenderer.invoke('task:update', id, patch),
+  moveTaskPlan: (id, days) => ipcRenderer.invoke(ELECTRON_CHANNELS.tasks.movePlan, id, days),
   deleteTask: (id) => ipcRenderer.invoke('task:delete', id),
   createList: (draft) => ipcRenderer.invoke('list:create', draft),
   updateList: (id, patch) => ipcRenderer.invoke('list:update', id, patch),
@@ -18,8 +21,11 @@ const api: VNoteApi = {
   openAttachment: (id) => ipcRenderer.invoke('attachment:open', id),
   setListSuggestions: (listId, enabled) => ipcRenderer.invoke('list:suggestions', listId, enabled),
   refreshSuggestions: () => ipcRenderer.invoke('suggestions:refresh'),
+  getAiRecommendations: () => ipcRenderer.invoke(ELECTRON_CHANNELS.suggestions.recommend),
+  acceptAiRecommendation: (id) => ipcRenderer.invoke(ELECTRON_CHANNELS.suggestions.accept, id),
   addToMyDay: (taskId, day) => ipcRenderer.invoke('myday:add', taskId, day),
   getWeeklyReport: () => ipcRenderer.invoke(ELECTRON_CHANNELS.reports.weekly),
+  generateWeeklyReportDraft: () => ipcRenderer.invoke(ELECTRON_CHANNELS.reports.generateDraft),
 };
 
 contextBridge.exposeInMainWorld('vnote', api);

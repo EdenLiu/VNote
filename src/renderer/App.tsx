@@ -4,9 +4,13 @@ import type { Task, TaskPatch, ViewId } from '@shared/types';
 import { useVNote } from './hooks/useVNote';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { BrandHeader } from './components/sidebar/BrandHeader';
+import { AiSettingsButton } from './components/common/AiSettings';
 import { SmartViewsNav } from './components/sidebar/SmartViewsNav';
 import { ListsSection } from './components/sidebar/ListsSection';
 import { TaskList } from './components/tasklist/TaskList';
+import { SuggestionsView } from './components/tasklist/SuggestionsView';
+import { GanttView } from './components/planning/GanttView';
+import { QuadrantsView } from './components/planning/QuadrantsView';
 import { DetailPane } from './components/detail/DetailPane';
 import { DetailHeader } from './components/detail/DetailHeader';
 import { DetailTitle } from './components/detail/DetailTitle';
@@ -24,13 +28,13 @@ const VIEW_LABELS: Record<string, string> = {
   suggestions: 'Suggestions',
   planned: 'Planned',
   important: 'Important',
+  quadrants: 'Priority quadrants',
   completed: 'Completed',
 };
 
-const today = () => new Date().toISOString().slice(0, 10);
-
 export function App() {
   const {
+    todayKey,
     lists,
     categories,
     tasks,
@@ -39,6 +43,7 @@ export function App() {
     setError,
     createTask,
     updateTask,
+    moveTaskPlan,
     deleteTask,
     createList,
     updateList,
@@ -47,6 +52,7 @@ export function App() {
     updateStep,
     toggleSuggestions,
     addToMyDay,
+    acceptAiRecommendation,
     addAttachment,
     getWeeklyReport,
   } = useVNote();
@@ -55,6 +61,9 @@ export function App() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>();
   const [detailDraft, setDetailDraft] = useState<Partial<Task>>({});
   const [weeklyReportOpen, setWeeklyReportOpen] = useState(false);
+  const [aiSettingsRevision, setAiSettingsRevision] = useState(0);
+  const [showGantt, setShowGantt] = useState(false);
+  const currentList = lists.find((list) => activeView === `list:${list.id}`);
 
   // Derive the selected task
   const selectedTask = useMemo(
@@ -69,12 +78,13 @@ export function App() {
 
   // Compute visible tasks based on active view
   const visibleTasks = useMemo(() => {
-    const todayKey = today();
     switch (activeView) {
       case 'suggestions':
         return suggestions;
       case 'planned':
         return tasks.filter((t) => Boolean(t.dueDate));
+      case 'quadrants':
+        return tasks.filter((t) => !t.completed);
       case 'important':
         return tasks.filter((t) => t.important && !t.completed);
       case 'completed':
@@ -90,7 +100,7 @@ export function App() {
         }
         return tasks;
     }
-  }, [activeView, tasks, suggestions]);
+  }, [activeView, tasks, suggestions, todayKey]);
 
   // Get the target list ID for quick-add
   const quickAddListId = useMemo(() => {
@@ -111,7 +121,18 @@ export function App() {
 
   const handleToggleComplete = (id: string, completed: boolean) => updateTask(id, { completed });
 
-  const todayKey = today();
+  const taskList = (
+    <TaskList
+      tasks={visibleTasks}
+      selectedTaskId={selectedTaskId}
+      quickAddListId={quickAddListId}
+      lists={lists}
+      activeView={activeView}
+      onSelectTask={handleSelectTask}
+      onToggleComplete={handleToggleComplete}
+      onCreateTask={handleCreateTask}
+    />
+  );
 
   return (
     <div className="layout">
@@ -128,6 +149,7 @@ export function App() {
           onDeleteList={(id) => deleteList(id)}
           onToggleSuggestions={(listId, enabled) => toggleSuggestions(listId, enabled)}
         />
+        <AiSettingsButton onSaved={() => setAiSettingsRevision((version) => version + 1)} />
       </Sidebar>
 
       {/* ===== MAIN PANE ===== */}
@@ -140,9 +162,20 @@ export function App() {
                 lists.find((l) => `list:${l.id}` === activeView)?.name ??
                 'List'}
             </div>
-            <div className="view-meta">{visibleTasks.length} tasks</div>
+            {activeView !== 'quadrants' && activeView !== 'suggestions' && (
+              <div className="view-meta">{visibleTasks.length} tasks</div>
+            )}
           </div>
           <div className="toolbar-spacer" />
+          {currentList && (
+            <button
+              className="toolbar-report-button"
+              aria-pressed={showGantt}
+              onClick={() => setShowGantt(!showGantt)}
+            >
+              Gantt
+            </button>
+          )}
           <button
             className="toolbar-report-button"
             onClick={() => setWeeklyReportOpen(true)}
@@ -155,17 +188,38 @@ export function App() {
 
         {error ? <ErrorBanner message={error} onDismiss={() => setError(null)} /> : null}
 
-        <div className="content-grid">
-          <TaskList
-            tasks={visibleTasks}
-            selectedTaskId={selectedTaskId}
-            quickAddListId={quickAddListId}
-            lists={lists}
-            activeView={activeView}
-            onSelectTask={handleSelectTask}
-            onToggleComplete={handleToggleComplete}
-            onCreateTask={handleCreateTask}
-          />
+        <div
+          className={activeView === 'quadrants' ? 'content-grid quadrant-layout' : 'content-grid'}
+        >
+          {activeView === 'quadrants' ? (
+            <QuadrantsView
+              day={todayKey}
+              tasks={visibleTasks}
+              lists={lists}
+              onSelectTask={handleSelectTask}
+              onUpdateTask={handleUpdateTask}
+            />
+          ) : currentList && showGantt ? (
+            <GanttView
+              tasks={visibleTasks}
+              listName={currentList.name}
+              onMovePlan={moveTaskPlan}
+              onSelectTask={handleSelectTask}
+            />
+          ) : activeView === 'suggestions' ? (
+            <SuggestionsView
+              key={`${todayKey}-${aiSettingsRevision}`}
+              tasks={tasks}
+              lists={lists}
+              today={todayKey}
+              onOpen={handleSelectTask}
+              onAccept={acceptAiRecommendation}
+            >
+              {taskList}
+            </SuggestionsView>
+          ) : (
+            taskList
+          )}
 
           {/* ===== DETAIL PANE ===== */}
           <DetailPane>
@@ -260,12 +314,19 @@ export function App() {
         </div>
       </section>
 
-      {weeklyReportOpen ? (
-        <WeeklyReportModal
-          onClose={() => setWeeklyReportOpen(false)}
-          fetchReport={getWeeklyReport}
-        />
-      ) : null}
+      <WeeklyReportModal
+        open={weeklyReportOpen}
+        onClose={() => setWeeklyReportOpen(false)}
+        onOpenTask={(taskId) => {
+          const task = tasks.find((item) => item.id === taskId);
+          if (task) {
+            setActiveView(`list:${task.listId}`);
+            setSelectedTaskId(task.id);
+            setWeeklyReportOpen(false);
+          }
+        }}
+        fetchReport={getWeeklyReport}
+      />
     </div>
   );
 }

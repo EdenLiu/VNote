@@ -50,10 +50,7 @@ export function TaskList({
         ? groups.map((group) => (
             <div key={group.listId} className="task-group">
               <div className="task-group-header" style={{ borderLeftColor: group.listColor }}>
-                <span
-                  className="task-group-dot"
-                  style={{ backgroundColor: group.listColor }}
-                />
+                <span className="task-group-dot" style={{ backgroundColor: group.listColor }} />
                 {group.listName}
                 <span className="task-group-count">{group.items.length}</span>
               </div>

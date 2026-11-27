@@ -3,6 +3,7 @@
  * Using a const object ensures channel names stay in sync.
  */
 export const ELECTRON_CHANNELS = {
+    aiSettings: { get: 'ai-settings:get', save: 'ai-settings:save' },
     state: {
         /** Fetch full application state. */
         get: 'state:get',
@@ -10,6 +11,7 @@ export const ELECTRON_CHANNELS = {
     tasks: {
         create: 'task:create',
         update: 'task:update',
+        movePlan: 'task:move-plan',
         delete: 'task:delete',
     },
     lists: {
@@ -32,6 +34,8 @@ export const ELECTRON_CHANNELS = {
     suggestions: {
         /** Re-run the suggestion scoring algorithm. */
         refresh: 'suggestions:refresh',
+        recommend: 'suggestions:recommend',
+        accept: 'suggestions:accept',
     },
     myDay: {
         /** Add a task to today's My Day view. */
@@ -40,5 +44,6 @@ export const ELECTRON_CHANNELS = {
     reports: {
         /** Tasks completed this week, grouped by list. */
         weekly: 'report:weekly',
+        generateDraft: 'report:generate-draft',
     },
 };

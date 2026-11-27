@@ -13,23 +13,19 @@ export function Sidebar({ children }: Props) {
     return saved ? Number(saved) : MIN_WIDTH;
   });
   const widthRef = useRef(width);
-  widthRef.current = width;
 
   const dragging = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
 
-  const onMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      dragging.current = true;
-      startX.current = e.clientX;
-      startWidth.current = widthRef.current;
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    },
-    [],
-  );
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+    startX.current = e.clientX;
+    startWidth.current = widthRef.current;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {

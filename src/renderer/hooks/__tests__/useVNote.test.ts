@@ -20,6 +20,7 @@ function mockTask(overrides: Partial<Task> = {}): Task {
     title: 'Test',
     completed: false,
     important: false,
+    urgent: false,
     notes: '',
     repeat: 'none',
     source: 'manual',
@@ -36,9 +37,12 @@ describe('useVNote', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     window.vnote = {
+      getAiSettings: vi.fn(),
+      saveAiSettings: vi.fn(),
       getState: vi.fn().mockResolvedValue(mockState()),
       createTask: vi.fn().mockResolvedValue(mockTask()),
       updateTask: vi.fn().mockResolvedValue(mockTask()),
+      moveTaskPlan: vi.fn(),
       deleteTask: vi.fn().mockResolvedValue(undefined),
       createList: vi.fn(),
       updateList: vi.fn(),
@@ -51,8 +55,11 @@ describe('useVNote', () => {
       openAttachment: vi.fn(),
       setListSuggestions: vi.fn(),
       refreshSuggestions: vi.fn().mockResolvedValue([]),
+      getAiRecommendations: vi.fn(),
+      acceptAiRecommendation: vi.fn(),
       addToMyDay: vi.fn().mockResolvedValue(mockTask()),
       getWeeklyReport: vi.fn().mockResolvedValue([]),
+      generateWeeklyReportDraft: vi.fn().mockResolvedValue([]),
     };
   });
 

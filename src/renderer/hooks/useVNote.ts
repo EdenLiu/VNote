@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AppState, Task, TaskDraft, TaskPatch, WeeklyReportGroup } from '@shared/types';
+import { useLocalDay } from './useLocalDay';
 
 /**
  * Central state hook for VNote. Manages the full AppState, provides memoized
  * derived data, and wraps every API call with load-on-success + error handling.
  */
 export function useVNote() {
+  const todayKey = useLocalDay();
   const [state, setState] = useState<AppState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [suggestedTasks, setSuggestedTasks] = useState<Task[]>([]);
@@ -31,7 +33,7 @@ export function useVNote() {
   const taskCount = state?.tasks.length ?? 0;
   useEffect(() => {
     void refreshSuggestions().catch(() => undefined); // eslint-disable-line react-hooks/set-state-in-effect -- syncing suggestions from IPC
-  }, [taskCount, refreshSuggestions]);
+  }, [taskCount, todayKey, refreshSuggestions]);
 
   /** Wrap an async API call with error handling and auto-reload on success. */
   const withError = useCallback(
@@ -62,6 +64,11 @@ export function useVNote() {
 
   const deleteTask = useCallback(
     (id: string) => withError(() => window.vnote.deleteTask(id)),
+    [withError],
+  );
+
+  const moveTaskPlan = useCallback(
+    (id: string, days: number) => withError(() => window.vnote.moveTaskPlan(id, days)),
     [withError],
   );
 
@@ -108,6 +115,11 @@ export function useVNote() {
     [withError],
   );
 
+  const acceptAiRecommendation = useCallback(
+    (id: string) => withError(() => window.vnote.acceptAiRecommendation(id)),
+    [withError],
+  );
+
   const addAttachment = useCallback(
     (taskId: string) => withError(() => window.vnote.addAttachment(taskId)),
     [withError],
@@ -131,6 +143,7 @@ export function useVNote() {
   const suggestions = useMemo(() => suggestedTasks.filter((t) => !t.completed), [suggestedTasks]);
 
   return {
+    todayKey,
     state,
     lists,
     categories,
@@ -141,6 +154,7 @@ export function useVNote() {
     load,
     createTask,
     updateTask,
+    moveTaskPlan,
     deleteTask,
     createList,
     updateList,
@@ -150,6 +164,7 @@ export function useVNote() {
     deleteStep,
     toggleSuggestions,
     addToMyDay,
+    acceptAiRecommendation,
     addAttachment,
     getWeeklyReport,
   };

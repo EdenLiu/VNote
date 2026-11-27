@@ -221,7 +221,7 @@ describe('TaskService', () => {
         expect(completed.dueDate).toBe('2026-06-22');
       });
 
-      it('advances reminderAt alongside dueDate for repeating tasks', async () => {
+      it('advances the due day and keeps the local reminder time for repeating tasks', async () => {
         const task = service.createTask({
           title: 'meeting',
           listId: 'inbox',
@@ -230,10 +230,8 @@ describe('TaskService', () => {
         });
         service.updateTask(task.id, { repeat: 'daily' });
         const completed = service.updateTask(task.id, { completed: true });
-        // addRepeatPeriod uses new Date() (local) → toISOString() (UTC), so compute expected dynamically
-        const expected = new Date('2026-05-22T09:00');
-        expected.setDate(expected.getDate() + 1);
-        expect(completed.reminderAt).toBe(expected.toISOString().slice(0, 16));
+        expect(completed.dueDate).toBe('2026-05-23');
+        expect(completed.reminderAt).toBe('2026-05-23T09:00');
       });
 
       it('non-repeating tasks complete normally (stay completed)', async () => {
@@ -439,7 +437,7 @@ describe('TaskService', () => {
   describe('addToMyDay', () => {
     it('adds a task to My Day for today', async () => {
       const task = service.createTask({ title: 'today task', listId: 'inbox' });
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date().toLocaleDateString('en-CA');
       const updated = service.addToMyDay(task.id);
       expect(updated.myDayDate).toBe(today);
     });
@@ -480,7 +478,7 @@ describe('TaskService', () => {
     });
 
     it('scores due-today tasks with high priority', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date().toLocaleDateString('en-CA');
       service.createTask({ title: 'due today', listId: 'inbox', dueDate: today });
       service.createTask({ title: 'no due date', listId: 'inbox' });
       const suggestions = service.getSuggestions();
@@ -557,6 +555,46 @@ describe('TaskService', () => {
   // getWeeklyReport
   // ---------------------------------------------------------------------------
   describe('getWeeklyReport', () => {
+    it('groups unfinished deadlines by local date from Friday through Sunday across a month boundary', () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date(2026, 0, 30, 0, 5));
+        const task = (listId: string, title: string, dueDate?: string) =>
+          service.createTask({ listId, title, dueDate });
+        const overdue = task('work', 'Review', '2026-01-29');
+        const friday = task('inbox', 'Review', '2026-01-30');
+        const sunday = task('inbox', 'Publish', '2026-02-01');
+        task('inbox', 'Next Monday', '2026-02-02');
+        task('inbox', 'Unscheduled');
+        const finished = task('inbox', 'Already sent', '2026-01-29');
+        service.updateTask(finished.id, { completed: true });
+
+        expect(service.getWeeklyReport()).toEqual([
+          {
+            listId: 'inbox',
+            listName: 'Tasks',
+            tasks: [
+              { taskId: finished.id, title: 'Already sent', completedAt: new Date().toISOString() },
+            ],
+            dueSoon: [
+              { taskId: friday.id, title: 'Review', dueDate: '2026-01-30' },
+              { taskId: sunday.id, title: 'Publish', dueDate: '2026-02-01' },
+            ],
+            overdue: [],
+          },
+          {
+            listId: 'work',
+            listName: 'Work',
+            tasks: [],
+            dueSoon: [],
+            overdue: [{ taskId: overdue.id, title: 'Review', dueDate: '2026-01-29' }],
+          },
+        ]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     // Exposes the raw DB so tests can inject deterministic completed_at timestamps.
     async function serviceWithDb() {
       const testDb = await createTestDb();

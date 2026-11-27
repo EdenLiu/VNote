@@ -38,7 +38,9 @@ export function TaskRow({ task, isSelected, onSelect, onToggleComplete }: Props)
       <div className="task-main">
         <div className="task-title-line">
           <span className={task.completed ? 'task-title done' : 'task-title'}>{task.title}</span>
-          {task.important ? <Star size={14} className="accent" /> : null}
+          {task.important ? (
+            <Star size={14} className="accent" role="img" aria-label="Important" />
+          ) : null}
         </div>
 
         <div className="task-badges">
